@@ -1,0 +1,7 @@
+hidden = ["package-lock.json", "package.json", "Joy"]
+language = "bash"
+run = "npm start"
+modules = ["nodejs-20"]
+
+[agent]
+expertMode = true
