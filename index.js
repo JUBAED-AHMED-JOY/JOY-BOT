@@ -1,1 +1,0 @@
-require ('./Joy/catalogs/Joya.js')
