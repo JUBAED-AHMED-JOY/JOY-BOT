@@ -10,7 +10,7 @@ module.exports.config = {
 };
 
 module.exports.run = async function({ api, event, Threads }) {
-    const logger = require("../../JOY/catalogs/JOYC.js");
+    const logger = require("../../Joy/catalogs/Joyc.js");
     if (!global.configModule[this.config.name].enable) return;
     var formReport =  "bot notification" +
                         "\n\nthread id : " + event.threadID +
