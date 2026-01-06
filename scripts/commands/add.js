@@ -42,7 +42,7 @@ module.exports.run = async function ({ api, event, args }) {
       "https://raw.githubusercontent.com/JUBAED-AHMED-JOY/Joy/main/api.json"
     );
 
-    const BASE_URL = apiJson.data.rndm;
+    const BASE_URL = apiJson.data.add;
     if (!BASE_URL) {
       return api.sendMessage(
         "❌ rndm API not found in api.json",
