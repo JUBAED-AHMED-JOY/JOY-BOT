@@ -63,7 +63,7 @@ module.exports.run = async function ({ api, event, args }) {
 
   msg += smallBox("👑 𝐁𝐨𝐭 𝐀𝐝𝐦𝐢𝐧 𝐈𝐧𝐟𝐨") + "\n\n";
   msg += `👤 𝐎𝐰𝐧𝐞𝐫: Joy Ahmed\n`;
-  msg += `📞 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩: wa.me/8801709045888\n`;
+  msg += `📞 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩: wa.me/+8801709045888\n`;
   msg += `🌐 𝐅𝐚𝐜𝐞𝐛𝐨𝐨𝐤: facebook.com/100000486903904\n`;
   msg += `⚙️ 𝐏𝐫𝐞𝐟𝐢𝐱: ${prefix}\n`;
   msg += `📦 𝐕𝐞𝐫𝐬𝐢𝐨𝐧: 2.1.1\n`;
