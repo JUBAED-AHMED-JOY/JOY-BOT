@@ -5,98 +5,110 @@ const path = require("path");
 const MAX_VIDEO_SIZE = 25 * 1024 * 1024; // 25MB
 
 module.exports.config = {
- name: "rndm",
- version: "1.1.0",
- credits: "Joy",
- permssion: 0,
- description: "Get random video by name",
- category: "media",
- usages: "/rndm <name>",
- prefix: true
+  name: "rndm",
+  version: "1.1.1",
+  credits: "Joy",
+  permssion: 0,
+  description: "Get random video by name",
+  category: "media",
+  usages: "/rndm <name>",
+  prefix: true
 };
 
 module.exports.run = async function ({ api, event, args }) {
- try {
- if (!args[0]) {
- return api.sendMessage(
- "❌ Usage: /rndm <name>",
- event.threadID
- );
- }
+  try {
+    if (!args[0]) {
+      return api.sendMessage(
+        "❌ Usage: /rndm <name>",
+        event.threadID
+      );
+    }
 
- const name = args.join(" ").toLowerCase();
+    const name = args.join(" ").toLowerCase();
 
- // Get random video info
- const res = await axios.get(
- `https://new-random-1.onrender.com/random?name=${encodeURIComponent(name)}`,
- { timeout: 120000 }
- );
+    /* 🔹 STEP 1: Load base API from GitHub */
+    const apiJson = await axios.get(
+      "https://raw.githubusercontent.com/JUBAED-AHMED-JOY/Joy/main/api.json"
+    );
 
- if (!res.data || !res.data.success || !res.data.data) {
- return api.sendMessage(
- `❌ No video found for "${name}"`,
- event.threadID
- );
- }
+    const BASE_URL = apiJson.data.rndm;
+    if (!BASE_URL) {
+      return api.sendMessage(
+        "❌ rndm API not found in api.json",
+        event.threadID
+      );
+    }
 
- const video = res.data.data;
- const videoUrl = video.url;
+    /* 🔹 STEP 2: Call random endpoint */
+    const res = await axios.get(
+      `${BASE_URL}/random?name=${encodeURIComponent(name)}`,
+      { timeout: 120000 }
+    );
 
- // Temp file path
- const tempPath = path.join(__dirname, `rndm_${Date.now()}.mp4`);
- const writer = fs.createWriteStream(tempPath);
+    if (!res.data || !res.data.success || !res.data.data) {
+      return api.sendMessage(
+        `❌ No video found for "${name}"`,
+        event.threadID
+      );
+    }
 
- // Download video (no HEAD request)
- const response = await axios({
- url: videoUrl,
- method: "GET",
- responseType: "stream",
- timeout: 120000
- });
+    const video = res.data.data;
+    const videoUrl = video.url;
 
- let downloaded = 0;
- let tooLarge = false;
+    /* 🔹 STEP 3: Download video */
+    const tempPath = path.join(__dirname, `rndm_${Date.now()}.mp4`);
+    const writer = fs.createWriteStream(tempPath);
 
- response.data.on("data", (chunk) => {
- downloaded += chunk.length;
- if (downloaded > MAX_VIDEO_SIZE) {
- tooLarge = true;
- response.data.destroy();
- }
- });
+    const response = await axios({
+      url: videoUrl,
+      method: "GET",
+      responseType: "stream",
+      timeout: 120000
+    });
 
- response.data.pipe(writer);
+    let downloaded = 0;
+    let tooLarge = false;
 
- await new Promise((resolve, reject) => {
- writer.on("finish", resolve);
- writer.on("error", reject);
- });
+    response.data.on("data", (chunk) => {
+      downloaded += chunk.length;
+      if (downloaded > MAX_VIDEO_SIZE) {
+        tooLarge = true;
+        response.data.destroy();
+      }
+    });
 
- // If video size > 25MB → send link only
- if (tooLarge) {
- if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
- return api.sendMessage(
- `🎬 ${video.name}\n📦 Size: >25MB\n🔗 ${videoUrl}`,
- event.threadID
- );
- }
+    response.data.pipe(writer);
 
- // Send video attachment
- api.sendMessage(
- {
- body: `🎬 ${video.name}\n📦 ${(downloaded / 1024 / 1024).toFixed(2)} MB`,
- attachment: fs.createReadStream(tempPath)
- },
- event.threadID,
- () => {
- if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
- }
- );
+    await new Promise((resolve, reject) => {
+      writer.on("finish", resolve);
+      writer.on("error", reject);
+    });
 
- } catch (err) {
- api.sendMessage(
- `❌ Error: ${err.response?.data?.msg || err.message}`,
- event.threadID
- );
- }
+    /* 🔹 STEP 4: Size check */
+    if (tooLarge) {
+      if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+      return api.sendMessage(
+        `🎬 ${video.name}\n📦 Size: >25MB\n🔗 ${videoUrl}`,
+        event.threadID
+      );
+    }
+
+    /* 🔹 STEP 5: Send video */
+    api.sendMessage(
+      {
+        body: `🎬 ${video.name}\n📦 ${(downloaded / 1024 / 1024).toFixed(2)} MB`,
+        attachment: fs.createReadStream(tempPath)
+      },
+      event.threadID,
+      () => {
+        if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+      }
+    );
+
+  } catch (err) {
+    api.sendMessage(
+      `❌ Error: ${err.response?.data?.msg || err.message}`,
+      event.threadID
+    );
+  }
 };
