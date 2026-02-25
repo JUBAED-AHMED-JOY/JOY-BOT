@@ -1,0 +1,33 @@
+hidden = ["package-lock.json", "package.json", "Joy"]
+language = "bash"
+run = "npm start"
+modules = ["nodejs-20", "web"]
+
+[agent]
+expertMode = true
+
+[nix]
+channel = "stable-25_05"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start Bot"
+
+[[workflows.workflow]]
+name = "Start Bot"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node --trace-warnings --use_strict --async-stack-traces Joy/catalogs/Joya.js"
+
+[workflows.workflow.metadata]
+outputType = "console"

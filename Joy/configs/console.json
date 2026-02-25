@@ -1,0 +1,28 @@
+{
+  "note": "config the console output and loaders here!",
+  "console": {
+    "success": "blue",
+    "error": "red",
+    "warn": "yellow",
+    "available": "blue, red, yellow, white, green, blueBright",
+    "editNames": {
+      "success": "Joy",
+      "error": "error",
+      "warn": "warn"
+    }
+  },
+  "logger": {
+    "colors": {
+      "cmdStarter": "blue",
+      "evntStarter": "blue",
+      "cmdLoader": "blue",
+      "evntLoader": "blue"
+    },
+    "strings": {
+      "cmdStarter": "DEPLOYING ALL COMMANDS",
+      "evntStarter": "DEPLOYING ALL EVENTS",
+      "cmdLoader": "command",
+      "evntLoader": "event"
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+    "author": "JOY",
+    "autoRestart": true,
+    "accpetPending": false,
+    "developermode": false,
+    "language": "en",
+    "notification": false,
+    "approval": false,
+    "saveState": true,
+    "banMsg": false,
+    "adminOnlyMsg": false,
+    "BOTNAME": "Joy-bot",
+    "PREFIX": ".",
+    "EMOJI": "🤬",
+    "OPERATOR": [
+        "61555704213495",
+        "100000486903904"
+    ],
+    "ADMINBOT": [
+        "100000486903904",
+        "61555704213495",
+        "10007719"
+    ],
+    "OWNER": [
+        "100003661522127"
+    ],
+    "APPROVED": [],
+    "disabledcmds": [],
+    "disabledevents": [],
+    "note": "make sure that the bot name you entered is all lowercase",
+    "notice": "dont cng author name and owner uid. otherwise bot not working",
+    "notice2": "if you run use email and password, use saveState false; otherwise, use saveState true"
+}

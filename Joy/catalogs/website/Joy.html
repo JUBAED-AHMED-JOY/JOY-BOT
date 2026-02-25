@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✨ JOY AHMED✨</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box;}
+body {
+  min-height:100vh;
+  background:linear-gradient(135deg,#0f172a,#1e293b,#0f172a);
+  font-family:'Poppins',sans-serif;
+  overflow-x:hidden;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  color:#fff;
+  position:relative;
+  padding:20px;
+}
+
+.profile-container { 
+  text-align:center; 
+  width:100%; 
+  max-width:400px; 
+}
+
+.profile {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 4px solid #00f7ff;
+  object-fit: cover;
+  margin-bottom: 15px;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display:block;
+  margin-left:auto;
+  margin-right:auto;
+}
+.profile:hover { transform: scale(1.1); box-shadow: 0 0 20px #00f7ff; }
+
+.name { font-size:22px; margin-bottom:15px; display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap; }
+.verified-badge { display:inline-block; width:18px; height:18px; background:gold; border-radius:50%; position:relative; }
+.verified-badge::after { content:"\2713"; color:black; font-size:12px; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-weight:bold; }
+
+.social { display:flex; justify-content:center; gap:15px; margin-bottom:15px; flex-wrap:wrap; }
+.social a { width:42px; height:42px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:rgba(255,255,255,0.1); color:#00f7ff; font-size:18px; text-decoration:none; transition:all 0.3s ease; }
+.social a:hover { background:#00f7ff; color:#111; transform:translateY(-6px) scale(1.2); box-shadow:0 0 20px #00f7ff; }
+
+.styled-text { text-align:center; font-size:20px; font-weight:600; color:#F7EE00; text-shadow:0 0 10px #F7EE00,0 0 20px #F7EE00; margin:20px 0; }
+.styled-text span { display:inline-block; opacity:0; transform: translateY(20px); animation: fadeUp 0.8s forwards; }
+.styled-text span:nth-child(1){ animation-delay: 0.2s; }
+.styled-text span:nth-child(2){ animation-delay: 0.8s; }
+.styled-text span:nth-child(3){ animation-delay: 1.4s; }
+.styled-text span:nth-child(4){ animation-delay: 2s; }
+@keyframes fadeUp { 0% { opacity:0; transform:translateY(20px); } 100% { opacity:1; transform:translateY(0); } }
+
+.skills { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:15px; justify-content:center; z-index:2; }
+.skills i { font-size:28px; color:#00f7ff; cursor:pointer; transition:0.3s; animation: float 3s ease-in-out infinite alternate; position:relative; }
+.skills i:hover { color:#38f8a1; transform:scale(1.4) rotate(10deg); text-shadow:0 0 15px #00f7ff; }
+
+@keyframes float { 0% { transform:translateY(0); } 50% { transform:translateY(-6px); } 100% { transform:translateY(0); } }
+
+.project-box, .message-box { background:rgba(30,41,59,0.95); border-radius:12px; padding:15px 20px; width:100%; max-width:400px; color:#fff; text-align:center; margin:12px auto; transition:0.3s; }
+.project-box { border:2px solid #00f7ff; }
+.project-box:hover { box-shadow:0 0 25px #00f7ff; transform:scale(1.03); }
+.project-box h4 { margin-bottom:8px; color:#38bdf8; font-size:16px; }
+.project-box p { font-size:14px; color:#00ff00; line-height:1.5; transition:0.3s; }
+
+.message-box { border:2px solid #38f8a1; }
+.message-box input { padding:8px; width:65%; min-width:150px; border-radius:6px; border:1px solid #00f7ff; outline:none; color:#000; margin-right:5px; }
+.message-box button { padding:8px 12px; border:none; border-radius:6px; background:#00f7ff; color:#111; cursor:pointer; font-weight:bold; }
+
+.footer-icons { margin-top:20px; text-align:center; z-index:2; }
+.footer-icons a { margin:0 8px; display:inline-block; width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,0.1); color:#fff; font-size:16px; line-height:28px; text-align:center; transition:0.3s; }
+.footer-icons a:hover { transform:translateY(-3px) scale(1.2); box-shadow:0 0 10px #00f7ff; }
+.footer-icons a.email { color:#f00; }
+
+.presented { font-size:12px; color:#94a3b8; margin-top:8px; text-align:center; }
+
+.flower, .snow { position:fixed; pointer-events:none; user-select:none; z-index:9999; }
+@keyframes snowfall { 0% { transform:translateY(-20px); opacity:1; } 100% { transform:translateY(90vh); opacity:0; } }
+@keyframes fall { 0%{transform:translateY(0) scale(1);opacity:1;} 100%{transform:translateY(120px) scale(0.5);opacity:0;} }
+
+@media(max-width:400px){
+  .profile { width:120px; height:120px; }
+  .project-box,.message-box{width:100%;}
+  .skills i{font-size:24px;}
+  .message-box input{width:65%;}
+}
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+<audio id="bgMusic" autoplay loop></audio>
+
+<div class="profile-container">
+  <a href="https://drive.google.com/uc?id=1544txBvxvi8HHgKuOuuKmHVLYsBSd1EW" target="_blank">
+    <img src="https://drive.google.com/uc?id=1544txBvxvi8HHgKuOuuKmHVLYsBSd1EW" alt="Profile" class="profile" id="profilePic">
+  </a>
+
+  <div class="name">
+    JOY AHMED  
+    <span class="verified-badge"></span>
+  </div>
+
+  <div class="social">
+    <a href="https://www.facebook.com/100000486903904" target="_blank"><i class="fab fa-facebook-f"></i></a>
+    <a href="https://t.me/JOY_AHMED_88" target="_blank"><i class="fab fa-telegram-plane"></i></a>
+    <a href="https://wa.me/+8801709045888" target="_blank"><i class="fab fa-whatsapp"></i></a>
+    <a href="https://github.com/JUBAED-AHMED-JOY" target="_blank"><i class="fab fa-github"></i></a>
+  </div>
+
+  <div class="styled-text">
+    <span>Hey 👋🏽</span><br>
+    <span>I'm Joy Ahmed</span><br>
+    <span>Welcome to my profile</span><br>
+    <span>I'm Bot Creator</span>
+  </div>
+
+  <div class="skills">
+    <i class="fab fa-js" data-project="Project A: E-commerce site" title="JS Project"></i>
+    <i class="fab fa-node-js" data-project="Node API: Messenger bot" title="Node Project"></i>
+    <i class="fab fa-react" data-project="React Portfolio Website" title="React Project"></i>
+    <i class="fab fa-python" data-project="ML Script Automation" title="Python Project"></i>
+    <i class="fab fa-php" data-project="PHP CMS Backend" title="PHP Project"></i>
+  </div>
+
+  <div class="project-box" id="project1">
+    <h4>Project Highlights</h4>
+    <p>Hover over a skill to see project details here.</p>
+  </div>
+
+
+
+  <div class="message-box">
+    <h4>Send Me a Message</h4>
+    <input type="text" id="msgInput" placeholder="Type your message...">
+    <button id="sendBtn">Send</button>
+  </div>
+
+  <div class="footer-icons">
+    <a href="joyahmedtt@gmail.com" target="_blank" class="email"><i class="fas fa-envelope"></i></a>
+    <div class="presented">made by <strong>Joy Ahmed</strong></div>
+  </div>
+</div>
+
+<script>
