@@ -1,6 +1,6 @@
 {
   "name": "JOY",
-  "version": "2.0.0",
+  "version": "20.20.0",
   "description": "simple messenger bot",
   "main": "",
   "scripts": {
@@ -11,6 +11,7 @@
   "author": "JOY",
   "license": "ISC",
   "dependencies": {
+    "@dongdev/fca-unofficial": "^3.0.29",
     "aes-js": "^3.1.2",
     "axios": "^1.6.5",
     "bluebird": "^3.7.2",
