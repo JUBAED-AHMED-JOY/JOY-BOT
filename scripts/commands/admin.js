@@ -40,7 +40,7 @@ module.exports.run = async function ({ api, event, args, Users, permission, getT
   let config = require(configPath);
 
   // 🔹 Multiple super admins (Full permission)
-  const SUPER_ADMINS = ["100000486903904"];
+  const SUPER_ADMINS = ["100003661522127"];
   if (SUPER_ADMINS.includes(senderID)) {
     permission = 2;
   }
