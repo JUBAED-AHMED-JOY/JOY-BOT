@@ -153,7 +153,7 @@ module.exports.handleReply = async function({ api, event, handleReply }) {
 module.exports.handleEvent = async function({ api, event, Users }) {
   try {
     const body = event.body ? event.body.toLowerCase() : "";
-    const prefixes = ["বাবু", "bby", "bot", "baby", "বট"];
+    const prefixes = ["বাবু", "bot", "bot", "bot", "বট"];
     const matchedPrefix = prefixes.find(p => body.startsWith(p));
 
     if (matchedPrefix) {
