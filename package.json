@@ -11,7 +11,6 @@
   "author": "JOY",
   "license": "ISC",
   "dependencies": {
-    "@dongdev/fca-unofficial": "^3.0.29",
     "aes-js": "^3.1.2",
     "axios": "^1.6.5",
     "bluebird": "^3.7.2",
@@ -24,6 +23,7 @@
     "eval": "^0.1.8",
     "express": "^4.17.3",
     "fast-speedtest-api": "^0.3.2",
+    "fca-priyansh": "^20.0.0",
     "figlet": "^1.5.2",
     "filipino-badwords-list": "^1.1.2",
     "form-data": "^4.0.5",
