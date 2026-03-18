@@ -1,88 +1,77 @@
 const axios = require("axios");
 const yts = require("yt-search");
-const fs = require("fs");
+const fs = require("fs-extra");
 const path = require("path");
-
-async function getAPI() {
-  try {
-    const res = await axios.get("https://raw.githubusercontent.com/JUBAED-AHMED-JOY/Joy/main/api.json");
-    return res.data;
-  } catch (err) {
-    console.error("API JSON Error:", err.message);
-    return null;
-  }
-}
+const { downloadVideo } = require("joy-video-downloader");
 
 module.exports.config = {
   name: "video",
-  version: "2.0.0",
+  version: "1.0.0",
   credits: "Joy",
   permission: 0,
-  description: "Download YouTube Video",
+  description: "Download Video from YouTube or Search",
   prefix: true,
   category: "media",
-  usages: "video <name / youtube link>",
-  cooldowns: 5
+  usages: "video <video name / link>",
+  cooldowns: 10
 };
 
 module.exports.run = async function ({ api, event, args }) {
-
-  if (!args.length)
-    return api.sendMessage("⚠️ Video name or link dao.", event.threadID, event.messageID);
-
-  const apis = await getAPI();
-  if (!apis || !apis.Yt)
-    return api.sendMessage("❌ API load korte parlam na.", event.threadID, event.messageID);
+  const { threadID, messageID } = event;
+  if (!args.length) return api.sendMessage("⚠️ ভিডিওর নাম অথবা লিঙ্ক দিন।", threadID, messageID);
 
   let query = args.join(" ");
-  let ytLink = query;
+  let videoLink = query;
 
   try {
-
-    // 🔎 Search if not link
-    if (!query.includes("youtu")) {
+    // ইউটিউব সার্চ লজিক
+    if (!videoLink.includes("youtu")) {
       const search = await yts(query);
-      if (!search.videos.length)
-        return api.sendMessage("❌ Video khuje pai nai.", event.threadID, event.messageID);
-
-      ytLink = search.videos[0].url;
+      if (!search || !search.videos.length) return api.sendMessage("❌ ভিডিওটি খুঁজে পাওয়া যায়নি।", threadID, messageID);
+      videoLink = search.videos[0].url;
     }
 
-    const loading = await api.sendMessage("⏳ Downloading video...", event.threadID);
+    // লোডিং রিঅ্যাকশন এবং মেসেজ
+    api.setMessageReaction("⏳", messageID, (err) => {}, true);
+    const loadingMsg = await api.sendMessage("⏳ ভিডিওটি প্রসেসিং হচ্ছে, দয়া করে অপেক্ষা করুন...", threadID);
 
-    // 🔥 IMPORTANT: তোমার API যদি mp4 endpoint আলাদা হয় সেটা ঠিক করো
-    const apiURL = `${apis.Yt}/joy/mp4?url=${encodeURIComponent(ytLink)}`;
+    // ক্যাশ ফোল্ডার নিশ্চিত করা
+    const cacheDir = path.resolve(__dirname, "cache");
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+    
+    // ভিডিও ফাইল পাথ (.mp4)
+    const filePath = path.join(cacheDir, `video_${Date.now()}.mp4`);
 
-    const apiRes = await axios.get(apiURL);
-    console.log("API Response:", apiRes.data);
+    // downloadVideo মেথড ব্যবহার করে ডাউনলোড
+    const data = await downloadVideo(videoLink, filePath);
 
-    const data = apiRes.data?.data || apiRes.data;
-    const title = data?.title || "YouTube Video";
-    const dl = data?.url || data?.downloadUrl || data?.link;
-
-    if (!dl) {
-      api.unsendMessage(loading.messageID);
-      return api.sendMessage("❌ Video download link pai nai.", event.threadID, event.messageID);
+    if (!data || !data.title) {
+      api.unsendMessage(loadingMsg.messageID);
+      api.setMessageReaction("❌", messageID, (err) => {}, true);
+      return api.sendMessage("❌ ভিডিওটি ডাউনলোড করা সম্ভব হয়নি!", threadID, messageID);
     }
 
-    // 📦 Temp file path
-    const filePath = path.join(__dirname, `video_${Date.now()}.mp4`);
+    const { title, filePath: savedPath } = data;
 
-    const videoBuffer = await axios.get(dl, { responseType: "arraybuffer" });
+    api.setMessageReaction("✅", messageID, (err) => {}, true);
+    api.unsendMessage(loadingMsg.messageID);
 
-    fs.writeFileSync(filePath, videoBuffer.data);
+    // ভিডিও পাঠানো এবং পাঠানোর পর ফাইল ডিলিট করা
+    return api.sendMessage(
+      {
+        body: `🎬 ভিডিও: ${title}\n✅ ডাউনলোড সম্পন্ন।`,
+        attachment: fs.createReadStream(savedPath),
+      },
+      threadID,
+      () => {
+        if (fs.existsSync(savedPath)) fs.unlinkSync(savedPath);
+      },
+      messageID
+    );
 
-    api.unsendMessage(loading.messageID);
-
-    await api.sendMessage({
-      body: `🎬 ${title}\n✅ Video Ready`,
-      attachment: fs.createReadStream(filePath)
-    }, event.threadID, event.messageID);
-
-    fs.unlinkSync(filePath);
-
-  } catch (err) {
-    console.error("Video Error:", err.message);
-    return api.sendMessage("❌ MP4 Download Failed.", event.threadID, event.messageID);
+  } catch (error) {
+    console.error(error);
+    api.setMessageReaction("❌", messageID, (err) => {}, true);
+    return api.sendMessage("❌ ভিডিও ডাউনলোড করার সময় কোনো সমস্যা হয়েছে!", threadID, messageID);
   }
 };
