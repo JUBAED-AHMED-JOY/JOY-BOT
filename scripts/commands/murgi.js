@@ -1,6 +1,6 @@
 module.exports.config = {
   name: "murgi",
-  version: "1.2.0",
+  version: "1.2.1",
   permission: 2,
   credits: "JOY",
   prefix: true,
@@ -15,15 +15,16 @@ module.exports.run = async function({ api, args, event }) {
 
   let targetID, name;
 
-  
   if (type == "message_reply") {
     targetID = messageReply.senderID;
-    name = "ওই মাদারচোদ"; 
+    // রিপ্লাই দেওয়া ব্যক্তির নাম সংগ্রহ করা
+    const userInfo = await api.getUserInfo(targetID);
+    name = userInfo[targetID].name;
   } else if (Object.keys(mentions).length > 0) {
     targetID = Object.keys(mentions)[0];
     name = mentions[targetID].replace("@", "");
   } else {
-    return api.sendMessage("কাউকে তো মেনশন কর বা রিপ্লাই দে", threadID, messageID);
+    return api.sendMessage("কাউকে তো মেনশন কর বা রিপ্লাই দে!", threadID, messageID);
   }
 
   var arraytag = [{ id: targetID, tag: name }];
@@ -31,8 +32,7 @@ module.exports.run = async function({ api, args, event }) {
 
   a("চুদা লো শুরু করলাম...");
 
-  
-
+  // টাইমআউট ফাংশনগুলো
   setTimeout(() => { a({ body: "খাংকির পোলা তর মারে চুদি 🥰। " + name, mentions: arraytag }) }, 3000);
   setTimeout(() => { a({ body: "খাংকির পোলা তর কচি বোন রে চুদি 😍.. " + name, mentions: arraytag }) }, 5000);
   setTimeout(() => { a({ body: "মাদারচোদ তর আম্মু পম পম খাংকির পো 🐰 " + name, mentions: arraytag }) }, 7000);
