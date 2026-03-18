@@ -1,97 +1,89 @@
 const axios = require("axios");
 const yts = require("yt-search");
-const fs = require("fs");
+const fs = require("fs-extra");
 const path = require("path");
-
-async function getAPI() {
-  try {
-    const res = await axios.get("https://raw.githubusercontent.com/JUBAED-AHMED-JOY/Joy/main/api.json");
-    return res.data;
-  } catch (err) {
-    console.error("API JSON Error:", err.message);
-    return null;
-  }
-}
+const { downloadVideo } = require("joy-video-downloader"); // আপনার প্যাকেজ রিকোয়ার করা হলো
 
 module.exports.config = {
   name: "youtube",
-  version: "9.0.0",
+  version: "10.0.0",
   credits: "Joy",
   permission: 0,
-  description: "YouTube Audio / Video Downloader",
+  description: "YouTube Audio/Video Downloader using joy-video-downloader",
   prefix: true,
   category: "media",
-  usages: ".youtube audio/video <name or link>",
+  usages: "youtube audio/video <name or link>",
   cooldowns: 5
 };
 
 module.exports.run = async function ({ api, event, args }) {
+  const { threadID, messageID } = event;
 
-  if (args.length < 2)
-    return api.sendMessage("⚠️ Use: .youtube audio/video song name", event.threadID, event.messageID);
+  // ইউজেস চেক
+  if (args.length < 2) {
+    return api.sendMessage("⚠️ ব্যবহারবিধি: .youtube audio <গানের নাম> অথবা .youtube video <ভিডিওর নাম>", threadID, messageID);
+  }
 
-  const apis = await getAPI();
-  if (!apis || !apis.Yt)
-    return api.sendMessage("❌ API load fail.", event.threadID, event.messageID);
-
-  const type = args[0].toLowerCase(); // audio or video
-  args.shift();
-
-  if (type !== "audio" && type !== "video")
-    return api.sendMessage("⚠️ First word must be audio or video.", event.threadID, event.messageID);
-
-  let query = args.join(" ");
+  const type = args[0].toLowerCase(); // audio বা video
+  const query = args.slice(1).join(" ");
   let ytLink = query;
 
+  if (type !== "audio" && type !== "video") {
+    return api.sendMessage("⚠️ প্রথম শব্দটি অবশ্যই 'audio' অথবা 'video' হতে হবে।", threadID, messageID);
+  }
+
   try {
-
-    // 🔎 Search if not link
-    if (!query.includes("youtu")) {
+    // 🔎 ইউটিউব সার্চ লজিক
+    if (!ytLink.includes("youtu")) {
       const search = await yts(query);
-      if (!search.videos.length)
-        return api.sendMessage("❌ Song not found.", event.threadID, event.messageID);
-
+      if (!search || !search.videos.length) {
+        return api.sendMessage("❌ ইউটিউবে কিছুই খুঁজে পাওয়া যায়নি।", threadID, messageID);
+      }
       ytLink = search.videos[0].url;
     }
 
-    const loading = await api.sendMessage("⏳ Downloading...", event.threadID);
+    // লোডিং রিঅ্যাকশন এবং মেসেজ
+    api.setMessageReaction("⏳", messageID, (err) => {}, true);
+    const loadingMsg = await api.sendMessage(`⏳ আপনার ${type} প্রসেসিং হচ্ছে, অপেক্ষা করুন...`, threadID);
 
-    const endpoint = type === "audio" ? "mp3" : "mp4";
+    // ক্যাশ ডিরেক্টরি নিশ্চিত করা
+    const cacheDir = path.resolve(__dirname, "cache");
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
 
-    const apiRes = await axios.get(
-      `${apis.Yt}/joy/${endpoint}?url=${encodeURIComponent(ytLink)}`
-    );
+    // ফাইলের এক্সটেনশন সেট করা
+    const ext = type === "audio" ? "mp3" : "mp4";
+    const filePath = path.join(cacheDir, `youtube_${Date.now()}.${ext}`);
 
-    const data = apiRes.data?.data;
-    const title = data?.title || "Unknown Title";
-    const dl = data?.url || data?.downloadUrl;
+    // আপনার প্যাকেজ ব্যবহার করে ডাউনলোড
+    const data = await downloadVideo(ytLink, filePath);
 
-    if (!dl) {
-      api.unsendMessage(loading.messageID);
-      return api.sendMessage("❌ Download link not found.", event.threadID, event.messageID);
+    if (!data || !data.title) {
+      api.unsendMessage(loadingMsg.messageID);
+      api.setMessageReaction("❌", messageID, (err) => {}, true);
+      return api.sendMessage("❌ ডাউনলোড লিঙ্ক জেনারেট করা সম্ভব হয়নি।", threadID, messageID);
     }
 
-    const ext = type === "audio" ? "mp3" : "mp4";
-    const filePath = path.join(__dirname, `temp_${Date.now()}.${ext}`);
+    const { title, filePath: savedPath } = data;
 
-    const file = await axios.get(dl, { responseType: "arraybuffer" });
-    fs.writeFileSync(filePath, file.data);
+    api.setMessageReaction("✅", messageID, (err) => {}, true);
+    api.unsendMessage(loadingMsg.messageID);
 
-    api.unsendMessage(loading.messageID);
-
-    await api.sendMessage(
+    // ফাইল পাঠানো এবং ডিলিট করা
+    return api.sendMessage(
       {
-        body: `🎬 Title: ${title}\n✅ ${type.toUpperCase()} Ready`,
-        attachment: fs.createReadStream(filePath)
+        body: `🎬 টাইটেল: ${title}\n✅ ${type.toUpperCase()} সম্পন্ন।`,
+        attachment: fs.createReadStream(savedPath)
       },
-      event.threadID,
-      event.messageID
+      threadID,
+      () => {
+        if (fs.existsSync(savedPath)) fs.unlinkSync(savedPath);
+      },
+      messageID
     );
 
-    setTimeout(() => fs.unlinkSync(filePath), 10000);
-
-  } catch (err) {
-    console.error(err);
-    return api.sendMessage("❌ Download Failed.", event.threadID, event.messageID);
+  } catch (error) {
+    console.error(error);
+    api.setMessageReaction("❌", messageID, (err) => {}, true);
+    return api.sendMessage(`❌ এরর: ${error.message || "ডাউনলোড ব্যর্থ হয়েছে"}`, threadID, messageID);
   }
 };
