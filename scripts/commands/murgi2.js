@@ -1,6 +1,6 @@
 module.exports.config = {
   name: "murgi2",
-  version: "1.0.3",
+  version: "1.0.4",
   permission: 2,
   credits: "JOY",
   prefix: true,
@@ -15,15 +15,16 @@ module.exports.run = async function({ api, args, event }) {
 
   let targetID, name;
 
-  
   if (type == "message_reply") {
     targetID = messageReply.senderID;
-    name = "ওই মাগী"; 
+    // রিপ্লাই দেওয়া আইডি থেকে নাম সংগ্রহ
+    const userInfo = await api.getUserInfo(targetID);
+    name = userInfo[targetID].name;
   } else if (Object.keys(mentions).length > 0) {
     targetID = Object.keys(mentions)[0];
     name = mentions[targetID].replace("@", "");
   } else {
-    return api.sendMessage("বস যে মেয়েকে ক্সুদ্দে চাউ সে মেয়েকে @ম্যানশন দেউ অথবা তার মেসেজে রিপ্লাই দেউ", threadID, messageID);
+    return api.sendMessage("বস যে মেয়েকে চুদতে চাও সে মেয়েকে @ম্যানশন দাও অথবা তার মেসেজে রিপ্লাই দাও!", threadID, messageID);
   }
 
   var arraytag = [{ id: targetID, tag: name }];
@@ -31,8 +32,7 @@ module.exports.run = async function({ api, args, event }) {
 
   a("চুদা লো...");
 
-  
-
+  // রোস্টিং লিস্ট শুরু
   setTimeout(() => { a({ body: "খাংকির মেয়ে তর মারে চুদি 🥰। " + name, mentions: arraytag }) }, 3000);
   setTimeout(() => { a({ body: "খাংকির মেয়ে তর কচি বোন রে চুদি 😍.. " + name, mentions: arraytag }) }, 5000);
   setTimeout(() => { a({ body: "মাদারচোদ তর আম্মু পম পম খাংকির পো 🐰 " + name, mentions: arraytag }) }, 7000);
@@ -72,7 +72,7 @@ module.exports.run = async function({ api, args, event }) {
   setTimeout(() => { a({ body: "বস্তিরন্দালাল এর বাচ্ছা বস্তির মেয়ে " + name, mentions: arraytag }) }, 168000);
   setTimeout(() => { a("~ আমার জারজ শন্তান জা ভাগ🤖") }, 171000);
   setTimeout(() => { a({ body: "তোর বাপে তোর নানা। 🤬 " + name, mentions: arraytag }) }, 175000);
-  setTimeout(() => { a({ body: "বস্তির মেয়ে তোর বইনরে মুসলমানি দিমু। " + name, mentions: arraytag }) }, 180000);
+  setTimeout(() => { a({ body: "বস্তির ছেলে তোর বইনরে মুসলমানি দিমু। " + name, mentions: arraytag }) }, 180000);
   setTimeout(() => { a({ body: "তোর মুখে হাইগ্যা দিমু। 🤣 " + name, mentions: arraytag }) }, 185000);
   setTimeout(() => { a({ body: "তর আম্মুর হোগা দিয়া ট্রেন ভইরা দিমু।। " + name, mentions: arraytag }) }, 190000);
   setTimeout(() => { a({ body: "কুত্তার বাচ্ছা তর বৌন ভোদায় মাগুর মাছ চাষ করুম।😍.. " + name, mentions: arraytag }) }, 195000);
