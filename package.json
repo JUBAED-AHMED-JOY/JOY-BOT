@@ -23,7 +23,6 @@
     "eval": "^0.1.8",
     "express": "^4.17.3",
     "fast-speedtest-api": "^0.3.2",
-    "fca-priyansh": "^20.0.0",
     "figlet": "^1.5.2",
     "filipino-badwords-list": "^1.1.2",
     "form-data": "^4.0.5",
