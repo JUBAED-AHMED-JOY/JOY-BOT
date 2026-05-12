@@ -9,7 +9,7 @@
     "saveState": true,
     "banMsg": false,
     "adminOnlyMsg": false,
-    "BOTNAME": "Joy-bot",
+    "BOTNAME": "JOY-BOT",
     "PREFIX": ".",
     "EMOJI": "🤬",
     "OPERATOR": [
@@ -22,7 +22,7 @@
         "10007719"
     ],
     "OWNER": [
-        "100003661522127"
+        "100000482524747"
     ],
     "APPROVED": [],
     "disabledcmds": [],
