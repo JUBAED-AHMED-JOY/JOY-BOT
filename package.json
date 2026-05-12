@@ -1,15 +1,27 @@
 {
   "name": "JOY",
   "version": "20.20.0",
-  "description": "simple messenger bot",
-  "main": "",
+  "description": "MIRAI BOT NEW VERSION COOKIES JOY-BOT",
+  "main": "Joy/catalogs/Joya.js",
+  "author": "JOY",
+  "license": "MIT",
+  "engines": {
+    "node": "20.x",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "start": "node --trace-warnings --use_strict --async-stack-traces Joy/catalogs/Joya.js",
+    "dev": "nodemon Joy/catalogs/Joya.js",
     "login": "node login",
-    "test": "node --trace-warnings --use_strict --async-stack-traces main"
+    "test": "node --trace-warnings --use_strict --async-stack-traces main",
+    "pm2": "pm2 start Joy/catalogs/Joya.js --name JOY-BOT",
+    "pm2-stop": "pm2 stop JOY-BOT",
+    "pm2-restart": "pm2 restart JOY-BOT",
+    "pm2-logs": "pm2 logs JOY-BOT",
+    "clean": "rm -rf node_modules package-lock.json && npm install",
+    "update": "npm update --save",
+    "audit-fix": "npm audit fix --force"
   },
-  "author": "JOY",
-  "license": "ISC",
   "dependencies": {
     "aes-js": "^3.1.2",
     "axios": "^1.6.5",
