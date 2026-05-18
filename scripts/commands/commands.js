@@ -1,9 +1,13 @@
+const { execSync } = require("child_process");
+const { join } = require("path");
+const fs = require("fs-extra");
+
 module.exports.config = {
   name: "cmd",
-  version: "1.0.0",
+  version: "2.0.0",
   permission: 2,
-  credits: "ryuko",
-  description: "Manage and control all bot modules",
+  credits: "Joy",
+  description: "Manage and control all bot modules with react confirmation",
   prefix: true,
   premium: false,
   category: "operator",
@@ -16,17 +20,17 @@ module.exports.config = {
   },
 };
 
-const loadCommand = function ({ moduleList, threadID, messageID }) {
-  const { execSync } = global.nodemodule["child_process"];
-  const { writeFileSync, unlinkSync, readFileSync } = global.nodemodule["fs-extra"];
-  const { join } = global.nodemodule["path"];
+function doLoad(moduleList) {
   const { configPath, mainPath, api } = global.client;
   const logger = require(mainPath + "/Joyc.js");
+  const listPackage = JSON.parse(fs.readFileSync("./package.json")).dependencies;
+  const listbuiltinModules = require("module").builtinModules;
 
-  let errorList = [];
+  let loaded = [], errors = [];
+
   delete require.cache[require.resolve(configPath)];
   let configValue = require(configPath);
-  writeFileSync(configPath + ".temp", JSON.stringify(configValue, null, 4), "utf8");
+  fs.writeFileSync(configPath + ".temp", JSON.stringify(configValue, null, 4), "utf8");
 
   for (const nameModule of moduleList) {
     try {
@@ -34,31 +38,17 @@ const loadCommand = function ({ moduleList, threadID, messageID }) {
       delete require.cache[require.resolve(dirModule)];
       const command = require(dirModule);
 
-      if (!command.config || !command.config.name) {
-        throw new Error("Module is malformed!");
-      }
+      if (!command.config || !command.config.name) throw new Error("Module is malformed!");
 
       global.client.commands.delete(nameModule);
-      global.client.eventRegistered = global.client.eventRegistered.filter((item) => item !== command.config.name);
+      global.client.eventRegistered = global.client.eventRegistered.filter(i => i !== command.config.name);
 
       if (command.config.dependencies && typeof command.config.dependencies === "object") {
-        const listPackage = JSON.parse(readFileSync("./package.json")).dependencies;
-        const listbuiltinModules = require("module").builtinModules;
-
-        for (const packageName in command.config.dependencies) {
-          try {
-            if (listPackage.hasOwnProperty(packageName) || listbuiltinModules.includes(packageName)) {
-              global.nodemodule[packageName] = require(packageName);
-            } else {
-              execSync(
-                `npm install ${packageName}@${command.config.dependencies[packageName] || "latest"}`,
-                { stdio: "inherit", env: process.env }
-              );
-              global.nodemodule[packageName] = require(packageName);
-            }
-          } catch (error) {
-            throw new Error(`Unable to install or load dependency '${packageName}'`);
+        for (const pkg in command.config.dependencies) {
+          if (!listPackage[pkg] && !listbuiltinModules.includes(pkg)) {
+            execSync(`npm install ${pkg}@${command.config.dependencies[pkg] || "latest"}`, { stdio: "inherit", env: process.env });
           }
+          global.nodemodule[pkg] = require(pkg);
         }
       }
 
@@ -71,87 +61,192 @@ const loadCommand = function ({ moduleList, threadID, messageID }) {
       }
 
       logger.loader(`Loaded command ${command.config.name}`);
-    } catch (error) {
-      errorList.push(`${nameModule}: ${error.message}`);
+      loaded.push(nameModule);
+    } catch (err) {
+      errors.push(`${nameModule}: ${err.message}`);
     }
   }
 
-  writeFileSync(configPath, JSON.stringify(configValue, null, 4), "utf8");
-  unlinkSync(configPath + ".temp");
+  fs.writeFileSync(configPath, JSON.stringify(configValue, null, 4), "utf8");
+  fs.unlinkSync(configPath + ".temp");
 
-  return api.sendMessage(
-    `Loaded ${moduleList.length - errorList.length} modules.\n${errorList.length > 0 ? "Errors:\n" + errorList.join("\n") : ""}`,
-    threadID,
-    messageID
-  );
-};
+  return { loaded, errors };
+}
 
-const unloadCommand = function ({ moduleList, threadID, messageID }) {
-  const { writeFileSync, unlinkSync } = global.nodemodule["fs-extra"];
+function doUnload(moduleList) {
   const { configPath, api } = global.client;
 
   delete require.cache[require.resolve(configPath)];
   let configValue = require(configPath);
-  writeFileSync(configPath + ".temp", JSON.stringify(configValue, null, 4), "utf8");
+  fs.writeFileSync(configPath + ".temp", JSON.stringify(configValue, null, 4), "utf8");
 
   for (const nameModule of moduleList) {
     global.client.commands.delete(nameModule);
-    global.client.eventRegistered = global.client.eventRegistered.filter((item) => item !== nameModule);
-    configValue.commandDisabled.push(`${nameModule}.js`);
-    global.config.commandDisabled.push(`${nameModule}.js`);
+    global.client.eventRegistered = global.client.eventRegistered.filter(i => i !== nameModule);
+    if (!configValue.commandDisabled.includes(`${nameModule}.js`)) {
+      configValue.commandDisabled.push(`${nameModule}.js`);
+      global.config.commandDisabled.push(`${nameModule}.js`);
+    }
   }
 
-  writeFileSync(configPath, JSON.stringify(configValue, null, 4), "utf8");
-  unlinkSync(configPath + ".temp");
+  fs.writeFileSync(configPath, JSON.stringify(configValue, null, 4), "utf8");
+  fs.unlinkSync(configPath + ".temp");
+}
 
-  return api.sendMessage(`Unloaded ${moduleList.length} modules.`, threadID, messageID);
-};
+module.exports.run = async function ({ event, args, api }) {
+  const { threadID, messageID, senderID } = event;
+  const action = args[0];
+  let moduleList = args.slice(1);
 
-module.exports.run = function ({ event, args, api }) {
-  const { readdirSync } = global.nodemodule["fs-extra"];
-  const { threadID, messageID } = event;
+  switch (action) {
 
-  let moduleList = args.splice(1);
+    case "load": {
+      if (!moduleList.length) return api.sendMessage("❌ Command name দাও।", threadID, messageID);
 
-  switch (args[0]) {
-    case "load":
-      if (moduleList.length === 0) {
-        return api.sendMessage("Module name cannot be empty.", threadID, messageID);
+      const existing = moduleList.filter(n => global.client.commands.has(n));
+      const fresh = moduleList.filter(n => !global.client.commands.has(n));
+
+      if (fresh.length) {
+        const { loaded, errors } = doLoad(fresh);
+        api.sendMessage(
+          `✅ Loaded: ${loaded.join(", ") || "none"}${errors.length ? `\n❌ Errors:\n${errors.join("\n")}` : ""}`,
+          threadID, messageID
+        );
       }
-      return loadCommand({ moduleList, threadID, messageID });
 
-    case "unload":
-      if (moduleList.length === 0) {
-        return api.sendMessage("Module name cannot be empty.", threadID, messageID);
+      if (existing.length) {
+        return api.sendMessage(
+          `╭╼|━━━━━━━━━━━━━━|╾╮\n⚠️ নিচের command গুলো আগে থেকেই আছে:\n📦 ${existing.join(", ")}\n\n👉 Overwrite করতে চাইলে এই message এ ✅ react দাও।\n╰╼|━━━━━━━━━━━━━━|╾╯`,
+          threadID,
+          (err, info) => {
+            if (err) return;
+            global.client.handleReact.push({
+              name: module.exports.config.name,
+              messageID: info.messageID,
+              author: senderID,
+              type: "confirmLoad",
+              moduleList: existing
+            });
+          }
+        );
       }
-      return unloadCommand({ moduleList, threadID, messageID });
+      return;
+    }
 
-    case "loadAll":
-      moduleList = readdirSync(__dirname)
-        .filter((file) => file.endsWith(".js") && !file.includes("example"))
-        .map((file) => file.replace(/\.js$/, ""));
-      return loadCommand({ moduleList, threadID, messageID });
+    case "unload": {
+      if (!moduleList.length) return api.sendMessage("❌ Command name দাও।", threadID, messageID);
 
-    case "unloadAll":
-      moduleList = readdirSync(__dirname)
-        .filter((file) => file.endsWith(".js") && !file.includes("example") && !file.includes("cmd"))
-        .map((file) => file.replace(/\.js$/, ""));
-      return unloadCommand({ moduleList, threadID, messageID });
+      const exists = moduleList.filter(n => global.client.commands.has(n));
+      const notFound = moduleList.filter(n => !global.client.commands.has(n));
 
-    case "info":
-      const command = global.client.commands.get(moduleList[0] || "");
-      if (!command) {
-        return api.sendMessage("The module you entered does not exist.", threadID, messageID);
-      }
+      if (notFound.length) api.sendMessage(`⚠️ পাওয়া যায়নি: ${notFound.join(", ")}`, threadID, messageID);
+      if (!exists.length) return;
+
       return api.sendMessage(
-        `${command.config.name.toUpperCase()}\nCoded by: ${command.config.credits}\nVersion: ${command.config.version}\nPermission: ${
-          command.config.permission === 0 ? "User" : command.config.permission === 1 ? "Admin" : "Bot Operator"
-        }\nCooldown: ${command.config.cooldowns}s\nDependencies: ${Object.keys(command.config.dependencies || {}).join(", ") || "None"}`,
+        `╭╼|━━━━━━━━━━━━━━|╾╮\n⚠️ নিচের command গুলো unload করবে:\n📦 ${exists.join(", ")}\n\n👉 Confirm করতে এই message এ ✅ react দাও।\n╰╼|━━━━━━━━━━━━━━|╾╯`,
         threadID,
-        messageID
+        (err, info) => {
+          if (err) return;
+          global.client.handleReact.push({
+            name: module.exports.config.name,
+            messageID: info.messageID,
+            author: senderID,
+            type: "confirmUnload",
+            moduleList: exists
+          });
+        }
       );
+    }
+
+    case "loadAll": {
+      const all = fs.readdirSync(__dirname)
+        .filter(f => f.endsWith(".js") && !f.includes("example"))
+        .map(f => f.replace(/\.js$/, ""));
+
+      return api.sendMessage(
+        `╭╼|━━━━━━━━━━━━━━|╾╮\n📦 মোট ${all.length} টি command load হবে।\n\n👉 Confirm করতে এই message এ ✅ react দাও।\n╰╼|━━━━━━━━━━━━━━|╾╯`,
+        threadID,
+        (err, info) => {
+          if (err) return;
+          global.client.handleReact.push({
+            name: module.exports.config.name,
+            messageID: info.messageID,
+            author: senderID,
+            type: "confirmLoad",
+            moduleList: all
+          });
+        }
+      );
+    }
+
+    case "unloadAll": {
+      const all = fs.readdirSync(__dirname)
+        .filter(f => f.endsWith(".js") && !f.includes("example") && !f.includes("cmd"))
+        .map(f => f.replace(/\.js$/, ""));
+
+      return api.sendMessage(
+        `╭╼|━━━━━━━━━━━━━━|╾╮\n⚠️ মোট ${all.length} টি command unload হবে!\n\n👉 Confirm করতে এই message এ ✅ react দাও।\n╰╼|━━━━━━━━━━━━━━|╾╯`,
+        threadID,
+        (err, info) => {
+          if (err) return;
+          global.client.handleReact.push({
+            name: module.exports.config.name,
+            messageID: info.messageID,
+            author: senderID,
+            type: "confirmUnload",
+            moduleList: all
+          });
+        }
+      );
+    }
+
+    case "info": {
+      const cmd = global.client.commands.get(moduleList[0] || "");
+      if (!cmd) return api.sendMessage(`❌ "${moduleList[0]}" command পাওয়া যায়নি।`, threadID, messageID);
+      const p = cmd.config.permission;
+      return api.sendMessage(
+        `╭╼|━━━━━━━━━━━━━━|╾╮\n📦 ${cmd.config.name.toUpperCase()}\n👤 Credits: ${cmd.config.credits || "N/A"}\n🔢 Version: ${cmd.config.version || "N/A"}\n🔐 Permission: ${p === 0 ? "User" : p === 1 ? "Admin" : "Operator"}\n⏱ Cooldown: ${cmd.config.cooldowns || 0}s\n📎 Dependencies: ${Object.keys(cmd.config.dependencies || {}).join(", ") || "None"}\n╰╼|━━━━━━━━━━━━━━|╾╯`,
+        threadID, messageID
+      );
+    }
+
+    case "list": {
+      const cmds = [...global.client.commands.keys()];
+      return api.sendMessage(
+        `╭╼|━━━━━━━━━━━━━━|╾╮\n📋 Loaded Commands (${cmds.length})\n\n${cmds.join(", ")}\n╰╼|━━━━━━━━━━━━━━|╾╯`,
+        threadID, messageID
+      );
+    }
 
     default:
-      return api.sendMessage("Invalid command. Use load, unload, loadAll, unloadAll, or info.", threadID, messageID);
+      return api.sendMessage(
+        `⚙️ Usage:\n.cmd load <name>\n.cmd unload <name>\n.cmd loadAll\n.cmd unloadAll\n.cmd info <name>\n.cmd list`,
+        threadID, messageID
+      );
+  }
+};
+
+module.exports.handleReact = async function ({ api, event, handleReact }) {
+  const { threadID, senderID, reaction } = event;
+
+  if (senderID !== handleReact.author) return;
+  if (reaction !== "✅" && reaction !== "👍") return;
+
+  const { type, moduleList } = handleReact;
+
+  if (type === "confirmLoad") {
+    const { loaded, errors } = doLoad(moduleList);
+    return api.sendMessage(
+      `╭╼|━━━━━━━━━━━━━━|╾╮\n✅ Load সফল: ${loaded.join(", ") || "none"}${errors.length ? `\n❌ Errors:\n${errors.join("\n")}` : ""}\n╰╼|━━━━━━━━━━━━━━|╾╯`,
+      threadID
+    );
+  }
+
+  if (type === "confirmUnload") {
+    doUnload(moduleList);
+    return api.sendMessage(
+      `╭╼|━━━━━━━━━━━━━━|╾╮\n✅ Unload সফল: ${moduleList.join(", ")}\n╰╼|━━━━━━━━━━━━━━|╾╯`,
+      threadID
+    );
   }
 };
