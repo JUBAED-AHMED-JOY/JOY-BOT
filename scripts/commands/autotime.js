@@ -28,6 +28,21 @@ function getAdminbotUID() {
   }
 }
 
+const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+const BN_MONTHS = ["জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"];
+const BN_DAYS = ["রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার", "শনিবার"];
+
+function toBanglaNum(n) {
+  return String(n).replace(/[0-9]/g, d => BN_DIGITS[+d]);
+}
+
+function getBanglaDate(now) {
+  const day = toBanglaNum(now.date());
+  const month = BN_MONTHS[now.month()];
+  const year = toBanglaNum(now.year());
+  return `${day} ${month} ${year}`;
+}
+
 function buildMessage() {
   const now = moment.tz("Asia/Dhaka");
   const hour = now.format("hh");
@@ -35,7 +50,9 @@ function buildMessage() {
   const second = now.format("ss");
   const ampm = now.format("A");
   const day = now.format("dddd");
+  const bnDay = BN_DAYS[now.day()];
   const date = now.format("DD MMMM YYYY");
+  const bnDate = getBanglaDate(now);
 
   const adminUID = getAdminbotUID();
   const fbLink = adminUID ? `https://facebook.com/${adminUID}` : "N/A";
@@ -49,20 +66,23 @@ function buildMessage() {
   else greeting = "🌙 শুভ রাত!";
 
   return (
-`╔════════════════════╗
-    🕐 𝗔𝗨𝗧𝗢 𝗧𝗜𝗠𝗘 𝗨𝗣𝗗𝗔𝗧𝗘
-╚════════════════════╝
+`┏━━━━━━━━━━━━━┓
+┃   🕰️  𝗧𝗜𝗠𝗘 𝗨𝗣𝗗𝗔𝗧𝗘  🕰️   ┃
+┗━━━━━━━━━━━━━┛
 
-${greeting}
+   ${greeting}
 
-⏰ সময়  :  ${hour}:${minute}:${second} ${ampm}
-📅 তারিখ :  ${date}
-📆 দিন   :  ${day}
+┌────────────┐
+│  ⏰  ${hour}:${minute}:${second} ${ampm}
+│  📅  ${date}
+│  🗓️  ${bnDate}
+│  📆  ${bnDay}
+└────────────┘
 
-━━━━━━━━━━━━━━━━
-🤖 𝗕𝗼𝘁 𝗔𝗱𝗺𝗶𝗻
-🔗 ${fbLink}
-━━━━━━━━━━━━━━━━`
+┌────────────┐
+│  🤖 𝗕𝗼𝘁 𝗔𝗱𝗺𝗶𝗻      │
+│  🔗 ${fbLink}
+└────────────┘`
   );
 }
 
