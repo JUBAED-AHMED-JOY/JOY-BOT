@@ -1,15 +1,27 @@
-const TARGET_THREAD_ID = "3000384260149757";
+const path = require("path");
+const fs = require("fs");
+
+function getAdminUIDs() {
+  try {
+    const config = JSON.parse(
+      fs.readFileSync(path.join(__dirname, "../../Joy.json"), "utf8")
+    );
+    return config.ADMINBOT || [];
+  } catch {
+    return [];
+  }
+}
 
 module.exports.config = {
   name: "resend",
-  version: "2.5.0",
-  permssion: 2,
+  version: "2.7.0",
+  permission: 2,
   credits: "Joy",
-  description: "Resend unsent messages with group name, date & time",
-  prefix: true,
+  description: "Auto forward unsent messages (text/photo/video) to all AdminBot UIDs",
+  prefix: false,
   premium: false,
   category: "system",
-  usages: "/resend on | off",
+  usages: "",
   cooldowns: 0,
   dependencies: {
     "request": "",
@@ -17,14 +29,9 @@ module.exports.config = {
   }
 };
 
-// GLOBAL STATUS (default ON)
-if (global.resendStatus === undefined) {
-  global.resendStatus = true;
-}
-
 module.exports.handleEvent = async function ({ event, api, Users, Threads }) {
   const request = global.nodemodule["request"];
-  const fs = global.nodemodule["fs-extra"];
+  const fsExtra = global.nodemodule["fs-extra"];
 
   const { messageID, senderID, body, attachments, type, threadID } = event;
 
@@ -32,10 +39,6 @@ module.exports.handleEvent = async function ({ event, api, Users, Threads }) {
   if (!global.data.botID) global.data.botID = api.getCurrentUserID();
   if (senderID == global.data.botID) return;
 
-  // 🔴 CHECK GLOBAL RESEND STATUS
-  if (!global.resendStatus) return;
-
-  // SAVE NORMAL MESSAGE
   if (type !== "message_unsend") {
     global.logMessage.set(messageID, {
       body: body || "",
@@ -44,27 +47,23 @@ module.exports.handleEvent = async function ({ event, api, Users, Threads }) {
     return;
   }
 
-  // GET OLD MESSAGE
   const oldMsg = global.logMessage.get(messageID);
   if (!oldMsg) return;
 
-  // USER NAME
-  const userName = await Users.getNameUser(senderID);
+  const adminUIDs = getAdminUIDs();
+  if (!adminUIDs.length) return;
 
-  // GROUP NAME
+  const userName = await Users.getNameUser(senderID);
   const threadInfo = await Threads.getInfo(threadID);
   const threadName = threadInfo.threadName || "Unknown Group";
 
-  // TIME & DATE (Asia/Dhaka) - English + AM/PM
   const now = new Date();
-
   const time = now.toLocaleTimeString("en-US", {
     timeZone: "Asia/Dhaka",
     hour: "2-digit",
     minute: "2-digit",
     hour12: true
   });
-
   const date = now.toLocaleDateString("en-US", {
     timeZone: "Asia/Dhaka",
     month: "2-digit",
@@ -72,78 +71,53 @@ module.exports.handleEvent = async function ({ event, api, Users, Threads }) {
     year: "numeric"
   });
 
-  // TEXT ONLY
+  const header = `🚨 UNSENT MESSAGE\n👥 Group: ${threadName}\n👤 User: ${userName}\n⏰ Time: ${time}\n📅 Date: ${date}`;
+
   if (!oldMsg.attachments || oldMsg.attachments.length === 0) {
-    return api.sendMessage(
-      `🚨 UNSENT MESSAGE
-👥 Group: ${threadName}
-👤 User: ${userName}
-⏰ Time: ${time}
-📅 Date: ${date}
-💬 Message: ${oldMsg.body || "No text"}`,
-      TARGET_THREAD_ID
-    );
+    const textMsg = `${header}\n💬 Message: ${oldMsg.body || "No text"}`;
+    for (const uid of adminUIDs) {
+      api.sendMessage(textMsg, uid);
+    }
+    return;
   }
 
-  // ATTACHMENTS
   const cacheDir = __dirname + "/cache";
-  if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
+  if (!fsExtra.existsSync(cacheDir)) fsExtra.mkdirSync(cacheDir);
 
-  let msg = {
-    body: `🚨 UNSENT MESSAGE
-👥 Group: ${threadName}
-👤 User: ${userName}
-⏰ Time: ${time}
-📅 Date: ${date}
-📎 Attachments: ${oldMsg.attachments.length}
-${oldMsg.body ? `💬 Message: ${oldMsg.body}` : ""}`,
-    attachment: []
-  };
-
+  const filePaths = [];
   let index = 0;
   for (const att of oldMsg.attachments) {
     index++;
-
     let ext = "dat";
     if (att.type === "photo") ext = "jpg";
     else if (att.type === "video") ext = "mp4";
     else if (att.type === "audio") ext = "mp3";
-    else if (att.type === "file") {
-      ext = att.name ? att.name.split(".").pop() : "dat";
-    }
+    else if (att.type === "file") ext = att.name ? att.name.split(".").pop() : "dat";
 
     const filePath = `${cacheDir}/${Date.now()}_${index}.${ext}`;
-
     await new Promise((resolve, reject) => {
       request(att.url)
-        .pipe(fs.createWriteStream(filePath))
+        .pipe(fsExtra.createWriteStream(filePath))
         .on("finish", resolve)
         .on("error", reject);
     });
-
-    msg.attachment.push(fs.createReadStream(filePath));
+    filePaths.push(filePath);
   }
 
-  return api.sendMessage(msg, TARGET_THREAD_ID);
-};
+  const msgBody = `${header}\n📎 Attachments: ${oldMsg.attachments.length}${oldMsg.body ? `\n💬 Message: ${oldMsg.body}` : ""}`;
 
-module.exports.run = async function ({ api, event, args }) {
-  const { threadID, messageID } = event;
-  const action = args[0];
-
-  if (!["on", "off"].includes(action)) {
-    return api.sendMessage(
-      "❌ Usage:\n/resend on\n/resend off",
-      threadID,
-      messageID
+  for (const uid of adminUIDs) {
+    api.sendMessage(
+      {
+        body: msgBody,
+        attachment: filePaths.map(p => fsExtra.createReadStream(p))
+      },
+      uid,
+      () => {
+        filePaths.forEach(p => { try { fsExtra.unlinkSync(p); } catch {} });
+      }
     );
   }
-
-  global.resendStatus = action === "on";
-
-  return api.sendMessage(
-    `✅ Resend is now ${action.toUpperCase()} (GLOBAL)`,
-    threadID,
-    messageID
-  );
 };
+
+module.exports.run = async function () {};
