@@ -1,31 +1,76 @@
-const { exec } = require('child_process');
+const { exec } = require("child_process");
+const path = require("path");
+const fs = require("fs");
 
 module.exports.config = {
-    name: "shell",
-    version: "1.0.0",
-    permission: 2,
-    description: "Execute shell commands",
-    prefix: true,
-    credits: "Jonell Magallanes",
-    cooldowns: 3,
-    category: "Utility",
+  name: "shell",
+  version: "2.0.0",
+  permission: 3,
+  credits: "Joy",
+  description: "Server এ shell command চালাও (Owner only)",
+  category: "admin",
+  prefix: true,
+  cooldowns: 3,
+  usages: "shell [command]"
 };
 
-module.exports.run = async function ({ api, event, args }) {
-    const { threadID, messageID } = event;
-    const command = args.join(" ");
+function getOwnerUIDs() {
+  try {
+    const config = JSON.parse(
+      fs.readFileSync(path.join(__dirname, "../../Joy.json"), "utf8")
+    );
+    return [...new Set([
+      ...(config.OWNER || []),
+      ...(config.ADMINBOT || [])
+    ])].map(String);
+  } catch { return []; }
+}
 
-    if (!command) {
-        return api.sendMessage("Please provide a shell command to execute.", threadID, messageID);
-    }
-        const teh = await api.sendMessage("Processing", threadID, messageID);
-    exec(command, (error, stdout, stderr) => {
-        if (error) {
-            return api.editMessage(`Error: ${error.message}`, teh.messageID ,threadID, messageID);
-        }
-        if (stderr) {
-            return api.editMessage(`Stderr: ${stderr}`, teh.messageID, threadID, messageID);
-        }
-        api.editMessage(`${stdout}`, teh.messageID, threadID, messageID);
-    });
+module.exports.run = async function ({ api, event, args }) {
+  const { threadID, messageID, senderID } = event;
+
+  const owners = getOwnerUIDs();
+  if (!owners.includes(String(senderID))) {
+    return api.sendMessage("❌ শুধুমাত্র Owner এই command ব্যবহার করতে পারবে।", threadID, messageID);
+  }
+
+  const command = args.join(" ").trim();
+  if (!command) {
+    return api.sendMessage(
+`┏━━━━━━━━━━━━━━━━━━━━━┓
+┃   💻 SHELL COMMAND    ┃
+┗━━━━━━━━━━━━━━━━━━━━━┛
+
+📌 ব্যবহার: .shell [command]
+
+উদাহরণ:
+  .shell ls
+  .shell node -v
+  .shell cat Joy.json
+  .shell pm2 list`, threadID, messageID);
+  }
+
+  const processing = await api.sendMessage(`⏳ চালু হচ্ছে...\n$ ${command}`, threadID, messageID);
+
+  exec(command, { timeout: 30000, maxBuffer: 1024 * 512 }, (err, stdout, stderr) => {
+    const output = (stdout || "") + (stderr || "");
+    const trimmed = output.trim();
+
+    let result = trimmed.length > 1800
+      ? trimmed.substring(0, 1800) + "\n\n... [output কেটে দেওয়া হয়েছে]"
+      : trimmed || "(কোনো output নেই)";
+
+    const status = err && !stdout ? `❌ Error (code: ${err.code || "unknown"})` : "✅ সম্পন্ন";
+
+    api.editMessage(
+`┏━━━━━━━━━━━━━━━━━━━━━┓
+┃   💻 SHELL OUTPUT     ┃
+┗━━━━━━━━━━━━━━━━━━━━━┛
+
+$ ${command}
+━━━━━━━━━━━━━━━━━━━━━━━
+${result}
+━━━━━━━━━━━━━━━━━━━━━━━
+${status}`, processing.messageID, threadID);
+  });
 };
