@@ -1,7 +1,7 @@
 module.exports.config = {
   name: "admin2",
   version: "2.0.0",
-  permission: 0,
+  permission: 2,
   credits: "Joy",
   description: "Control bot admin list",
   prefix: false,
@@ -39,9 +39,10 @@ module.exports.run = async function ({ api, event, args, Users, permission, getT
   delete require.cache[require.resolve(configPath)];
   let config = require(configPath);
 
-  // 🔹 Multiple super admins (Full permission)
-  const SUPER_ADMINS = ["100003661522127"];
-  if (SUPER_ADMINS.includes(senderID)) {
+  // Grant full permission to OWNER, ADMINBOT, and OPERATOR
+  const { OWNER = [], OPERATOR = [] } = global.config || {};
+  const superUsers = [...OWNER, ...ADMINBOT, ...OPERATOR].map(String);
+  if (superUsers.includes(String(senderID))) {
     permission = 2;
   }
 
