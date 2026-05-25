@@ -1,14 +1,39 @@
 const chalk = require('chalk');
-const gradient= require('gradient-string');
-const chalkAnimation = require('chalkercli');
-const color = gradient('blue', 'purple');
-const crayon = gradient('yellow', 'lime', 'green');
-const blu = gradient("#243aff", "#4687f0", "#5800d4");
-const sky = gradient('#0905ed','#346eeb', '#344feb');
+const gradient = require('gradient-string');
+const figlet = require('figlet');
 const config = require("../configs/console.json");
+
 var successColor = config.console.success;
 const errorColor = config.console.error;
 const warnColor = config.console.warn;
+
+// Startup banner — prints only once
+let _bannerPrinted = false;
+function printBanner() {
+  if (_bannerPrinted) return;
+  _bannerPrinted = true;
+  try {
+    const banner = figlet.textSync('JOY-BOT', { font: 'ANSI Shadow' });
+    const g = gradient(['#243aff', '#a044ff', '#ff44aa']);
+    console.log('\n' + g(banner));
+    console.log(gradient('#243aff', '#a044ff')('  ──────────────────────────────────────────────────'));
+    console.log(gradient('#a044ff', '#ff44aa')('  ✦  Author : Joy Ahmed') + '  │  ' + chalk.cyan('Prefix : ' + (global.config && global.config.PREFIX ? global.config.PREFIX : '.')));
+    console.log(gradient('#243aff', '#a044ff')('  ──────────────────────────────────────────────────') + '\n');
+  } catch (e) {
+    // silent fail if figlet not ready
+  }
+}
+
+// Suppress junk console.log output (e.g. "Hello World!" from obfuscated code)
+const _originalLog = console.log;
+const _blocked = ['Hello World!'];
+console.log = function (...args) {
+  const msg = args.join(' ');
+  if (_blocked.some(b => msg.includes(b))) return;
+  _originalLog.apply(console, args);
+};
+
+printBanner();
 
 module.exports = (text, type) => {
   switch (type) {
@@ -26,18 +51,18 @@ module.exports = (text, type) => {
       break;
   }
 };
-module.exports.error = (text, type) => {
+
+module.exports.error = (text) => {
   process.stderr.write(chalk[`${errorColor}`](config.console.editNames.error) + ` - ${text}\n`);
 };
 
-module.exports.err = (text, type) => {
+module.exports.err = (text) => {
   process.stderr.write(chalk[`${errorColor}`](config.console.editNames.error) + ` - ${text}\n`);
 };
 
-module.exports.warn = (text, type) => {
+module.exports.warn = (text) => {
   process.stderr.write(chalk[`${warnColor}`](config.console.editNames.warn) + ` - ${text}\n`);
 };
-
 
 module.exports.loader = (data, option) => {
   switch (option) {
@@ -51,4 +76,4 @@ module.exports.loader = (data, option) => {
       process.stderr.write(chalk[`${successColor}`](`${config.console.editNames.success}`) + ` - ${data}\n`);
       break;
   }
-}
+};
