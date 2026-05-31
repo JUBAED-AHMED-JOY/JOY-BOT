@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JOY-BOT Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Poppins:wght@400;600;700&display=swap');
+
+  :root {
+    --bg: #0a0e1a;
+    --card: #111827;
+    --card2: #1a2235;
+    --border: #1e3a5f;
+    --accent: #3b82f6;
+    --accent2: #8b5cf6;
+    --green: #10b981;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --glow: 0 0 20px rgba(59,130,246,0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Poppins', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(90deg, #0a0e1a, #111827);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-logo .logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .header-logo h1 { font-size: 18px; font-weight: 700; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .header-logo p { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  .status-pill {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--card2); border: 1px solid var(--border);
+    padding: 6px 14px; border-radius: 20px; font-size: 13px;
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.3s;
+  }
+  .status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  .status-dot.offline { background: var(--red); }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+  /* ── Layout ── */
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+  .grid-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+  .grid-main { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .grid-bottom { display: grid; grid-template-columns: 1fr; gap: 20px; }
+
+  @media (max-width: 768px) {
+    .grid-main { grid-template-columns: 1fr; }
+    .header { padding: 12px 16px; }
+    .container { padding: 16px 12px; }
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    transition: border-color 0.3s;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card-title {
+    font-size: 12px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.8px;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .card-title i { color: var(--accent); }
+
+  /* ── Stat cards ── */
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: flex; align-items: center; gap: 16px;
+    transition: all 0.3s;
+  }
+  .stat-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--glow); }
+  .stat-icon {
+    width: 46px; height: 46px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .stat-icon.blue { background: rgba(59,130,246,0.15); color: var(--accent); }
+  .stat-icon.green { background: rgba(16,185,129,0.15); color: var(--green); }
+  .stat-icon.purple { background: rgba(139,92,246,0.15); color: var(--accent2); }
+  .stat-icon.yellow { background: rgba(245,158,11,0.15); color: var(--yellow); }
+  .stat-value { font-size: 26px; font-weight: 700; line-height: 1; }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* ── Console ── */
+  .console-box {
+    background: #070b14;
+    border: 1px solid #1a2a40;
+    border-radius: 10px;
+    height: 320px;
+    overflow-y: auto;
+    padding: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    scroll-behavior: smooth;
+  }
+  .console-box::-webkit-scrollbar { width: 6px; }
+  .console-box::-webkit-scrollbar-track { background: transparent; }
+  .console-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .log-line { display: flex; gap: 10px; }
+  .log-time { color: #334155; flex-shrink: 0; }
+  .log-msg { color: #94a3b8; }
+  .log-msg.err { color: #f87171; }
+  .log-msg.warn { color: #fbbf24; }
+  .log-msg.ok { color: #34d399; }
+  .log-msg.info { color: #60a5fa; }
+  .console-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .auto-scroll-label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+  .auto-scroll-label input { accent-color: var(--accent); }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 18px; border-radius: 8px; font-size: 13px;
+    font-weight: 600; border: none; cursor: pointer;
+    transition: all 0.2s; text-decoration: none; font-family: 'Poppins', sans-serif;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+  .btn-primary:hover { box-shadow: 0 4px 15px rgba(59,130,246,0.4); transform: translateY(-1px); }
+  .btn-danger { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+  .btn-danger:hover { background: rgba(239,68,68,0.25); }
+  .btn-success { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+  .btn-success:hover { background: rgba(16,185,129,0.25); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* ── Joystate upload ── */
+  .joystate-area {
+    width: 100%;
+    min-height: 120px;
+    background: #070b14;
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    color: #94a3b8;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .joystate-area:focus { border-color: var(--accent); }
+
+  /* ── Commands table ── */
+  .cmd-search {
+    width: 100%; padding: 9px 14px;
+    background: #070b14; border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text);
+    font-family: 'Poppins', sans-serif; font-size: 13px;
+    outline: none; margin-bottom: 12px;
+    transition: border-color 0.3s;
+  }
+  .cmd-search:focus { border-color: var(--accent); }
+
+  .cmd-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .cmd-grid::-webkit-scrollbar { width: 4px; }
+  .cmd-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .cmd-item {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    transition: all 0.2s;
+  }
+  .cmd-item:hover { border-color: var(--accent); }
+  .cmd-name { font-weight: 700; font-size: 14px; color: #fff; }
+  .cmd-cat { font-size: 11px; color: var(--accent); margin: 2px 0 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .cmd-desc { font-size: 11px; color: var(--muted); line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-clamp: 2; -webkit-box-orient: vertical; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 18px;
+    font-size: 13px; display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.3s; z-index: 999;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--green); }
+  .toast.error { border-color: var(--red); }
+
+  /* ── Tab ── */
+  .tab-bar { display: flex; gap: 4px; margin-bottom: 14px; }
+  .tab-btn {
+    padding: 6px 14px; border-radius: 7px; font-size: 12px;
+    font-weight: 600; border: none; cursor: pointer;
+    background: transparent; color: var(--muted);
+    font-family: 'Poppins', sans-serif;
+    transition: all 0.2s;
+  }
+  .tab-btn.active { background: rgba(59,130,246,0.15); color: var(--accent); }
+  .tab-btn:hover { color: var(--text); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge-green { background: rgba(16,185,129,0.15); color: var(--green); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
+  .badge-blue { background: rgba(59,130,246,0.15); color: var(--accent); }
+
+  /* ── Config Editor ── */
+  .cfg-label {
+    display: block; font-size: 11px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px;
+    margin-bottom: 6px;
+  }
+  .cfg-input {
+    width: 100%; padding: 9px 12px;
+    background: #070b14; border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text);
+    font-family: 'Poppins', sans-serif; font-size: 13px;
+    outline: none; transition: border-color 0.2s;
+  }
+  .cfg-input:focus { border-color: var(--accent); }
+  select.cfg-input option { background: #111827; }
+
+  /* Toggle switch */
+  .toggle-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 14px; cursor: pointer;
+    transition: border-color 0.2s; user-select: none;
+  }
+  .toggle-row:hover { border-color: var(--accent); }
+  .toggle-label { font-size: 12px; color: var(--text); white-space: nowrap; }
+  .tog { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+  .tog input { opacity: 0; width: 0; height: 0; }
+  .tog-slider {
+    position: absolute; inset: 0; background: #334155;
+    border-radius: 20px; transition: 0.3s; cursor: pointer;
+  }
+  .tog-slider::before {
+    content: ''; position: absolute;
+    width: 14px; height: 14px; left: 3px; top: 3px;
+    background: #fff; border-radius: 50%; transition: 0.3s;
+  }
+  .tog input:checked + .tog-slider { background: var(--accent); }
+  .tog input:checked + .tog-slider::before { transform: translateX(16px); }
+
+  /* UID tag box */
+  .uid-box {
+    min-height: 44px; background: #070b14;
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px; display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .uid-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3);
+    color: #93c5fd; border-radius: 6px; padding: 3px 10px;
+    font-size: 12px; font-family: 'JetBrains Mono', monospace;
+  }
+  .uid-tag button {
+    background: none; border: none; color: #64748b;
+    cursor: pointer; font-size: 11px; padding: 0; line-height: 1;
+    transition: color 0.2s;
+  }
+  .uid-tag button:hover { color: var(--red); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-logo">
+    <div class="logo-icon">🤖</div>
+    <div>
+      <h1>JOY-BOT</h1>
+      <p>Control Panel</p>
+    </div>
+  </div>
+  <div class="status-pill">
+    <div class="status-dot" id="headerDot"></div>
+    <span id="headerStatus">Connecting...</span>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="container">
+
+  <!-- Stat cards -->
+  <div class="grid-top">
+    <div class="stat-card">
+      <div class="stat-icon blue"><i class="fas fa-robot"></i></div>
+      <div>
+        <div class="stat-value" id="statStatus">—</div>
+        <div class="stat-label">Bot Status</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green"><i class="fas fa-server"></i></div>
+      <div>
+        <div class="stat-value" id="statServerUptime">0s</div>
+        <div class="stat-label">Server Uptime</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon blue"><i class="fas fa-clock"></i></div>
+      <div>
+        <div class="stat-value" id="statBotUptime">0s</div>
+        <div class="stat-label">Bot Uptime</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon purple"><i class="fas fa-terminal"></i></div>
+      <div>
+        <div class="stat-value" id="statCmds">—</div>
+        <div class="stat-label">Commands</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon yellow"><i class="fas fa-rotate-right"></i></div>
+      <div>
+        <div class="stat-value" id="statRestarts">0</div>
+        <div class="stat-label">Restarts</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon yellow"><i class="fas fa-key"></i></div>
+      <div>
+        <div class="stat-value" id="statAppstate">—</div>
+        <div class="stat-label">Appstate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Middle row -->
+  <div class="grid-main">
+
+    <!-- Console -->
+    <div class="card">
+      <div class="console-toolbar">
+        <div class="card-title"><i class="fas fa-terminal"></i> Console Logs</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <label class="auto-scroll-label">
+            <input type="checkbox" id="autoScrollChk" checked> Auto-scroll
+          </label>
+          <button class="btn btn-sm" style="background:#1a2235;color:#64748b;border:1px solid #1e3a5f;" onclick="clearConsole()"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+      <div class="console-box" id="consoleBox">
+        <div class="log-line"><span class="log-msg info">[ DASHBOARD ] Connecting to bot console...</span></div>
+      </div>
+    </div>
+
+    <!-- Controls + Joystate -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Controls -->
+      <div class="card">
+        <div class="card-title"><i class="fas fa-sliders"></i> Controls</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+          <button class="btn btn-danger" onclick="restartBot()"><i class="fas fa-rotate-right"></i> Restart Bot</button>
+          <button class="btn btn-success" onclick="loadCommands()"><i class="fas fa-sync"></i> Refresh Commands</button>
+        </div>
+      </div>
+
+      <!-- Joystate -->
+      <div class="card" style="flex:1;">
+        <div class="card-title"><i class="fas fa-cookie-bite"></i> Update Appstate (Joystate.json)</div>
+        <div style="margin-bottom:10px;font-size:12px;color:var(--muted);">
+          Paste your Facebook appstate JSON array below, then click Save.
+        </div>
+
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab('paste',this)">Paste JSON</button>
+          <button class="tab-btn" onclick="switchTab('file',this)">Upload File</button>
+        </div>
+
+        <div id="tab-paste" class="tab-content active">
+          <textarea class="joystate-area" id="joystateInput" placeholder='[{"key":"c_user","value":"...","domain":".facebook.com",...}, ...]'></textarea>
+          <div style="margin-top:10px;display:flex;gap:8px;">
+            <button class="btn btn-primary" onclick="saveJoystate()"><i class="fas fa-save"></i> Save & Restart Bot</button>
+            <button class="btn btn-sm" style="background:#1a2235;color:#64748b;border:1px solid #1e3a5f;" onclick="document.getElementById('joystateInput').value=''"><i class="fas fa-times"></i> Clear</button>
+          </div>
+        </div>
+
+        <div id="tab-file" class="tab-content">
+          <div style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;" onclick="document.getElementById('fileInput').click()" id="dropZone">
+            <i class="fas fa-file-upload" style="font-size:28px;color:var(--accent);margin-bottom:8px;display:block;"></i>
+            <div style="font-size:13px;color:var(--muted);">Click or drag <strong style="color:var(--text);">Joystate.json</strong> here</div>
+          </div>
+          <input type="file" id="fileInput" accept=".json" style="display:none;" onchange="handleFileUpload(event)">
+          <div id="filePreview" style="margin-top:8px;font-size:12px;color:var(--muted);"></div>
+          <div style="margin-top:10px;">
+            <button class="btn btn-primary" onclick="saveJoystateFile()"><i class="fas fa-save"></i> Save & Restart Bot</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Joy.json Config Editor -->
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
+      <div class="card-title" style="margin:0;"><i class="fas fa-gear"></i> Bot Config (Joy.json)</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm" style="background:#1a2235;color:#64748b;border:1px solid #1e3a5f;" onclick="loadConfig()"><i class="fas fa-sync"></i> Reload</button>
+        <button class="btn btn-primary btn-sm" onclick="saveConfig()"><i class="fas fa-save"></i> Save & Restart Bot</button>
+      </div>
+    </div>
+
+    <!-- Basic Settings -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px;">
+      <div>
+        <label class="cfg-label">Bot Name</label>
+        <input class="cfg-input" type="text" id="cfg_BOTNAME" placeholder="JOY-BOT">
+      </div>
+      <div>
+        <label class="cfg-label">Prefix</label>
+        <input class="cfg-input" type="text" id="cfg_PREFIX" placeholder="." maxlength="5">
+      </div>
+      <div>
+        <label class="cfg-label">Emoji</label>
+        <input class="cfg-input" type="text" id="cfg_EMOJI" placeholder="🤖" maxlength="10">
+      </div>
+      <div>
+        <label class="cfg-label">Language</label>
+        <select class="cfg-input" id="cfg_language">
+          <option value="en">English (en)</option>
+          <option value="ar">Arabic (ar)</option>
+          <option value="vi">Vietnamese (vi)</option>
+          <option value="tl">Tagalog (tl)</option>
+          <option value="bd">Bengali (bd)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Toggles -->
+    <div style="margin-bottom:20px;">
+      <div class="cfg-label" style="margin-bottom:10px;">Settings</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;">
+        <label class="toggle-row"><span class="toggle-label">Auto Restart</span><div class="tog"><input type="checkbox" id="cfg_autoRestart"><span class="tog-slider"></span></div></label>
+        <label class="toggle-row"><span class="toggle-label">Save State</span><div class="tog"><input type="checkbox" id="cfg_saveState"><span class="tog-slider"></span></div></label>
+        <label class="toggle-row"><span class="toggle-label">Approval</span><div class="tog"><input type="checkbox" id="cfg_approval"><span class="tog-slider"></span></div></label>
+        <label class="toggle-row"><span class="toggle-label">Notification</span><div class="tog"><input type="checkbox" id="cfg_notification"><span class="tog-slider"></span></div></label>
+        <label class="toggle-row"><span class="toggle-label">Ban Msg</span><div class="tog"><input type="checkbox" id="cfg_banMsg"><span class="tog-slider"></span></div></label>
+        <label class="toggle-row"><span class="toggle-label">Admin Only Msg</span><div class="tog"><input type="checkbox" id="cfg_adminOnlyMsg"><span class="tog-slider"></span></div></label>
+        <label class="toggle-row"><span class="toggle-label">Accept Pending</span><div class="tog"><input type="checkbox" id="cfg_accpetPending"><span class="tog-slider"></span></div></label>
+        <label class="toggle-row"><span class="toggle-label">Developer Mode</span><div class="tog"><input type="checkbox" id="cfg_developermode"><span class="tog-slider"></span></div></label>
+      </div>
+    </div>
+
+    <!-- UID Lists -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
+      <div>
+        <div class="cfg-label" style="margin-bottom:8px;color:#f59e0b;">👑 OWNER UIDs</div>
+        <div class="uid-box" id="uid_OWNER"></div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <input class="cfg-input" type="text" id="uid_OWNER_input" placeholder="UID e.g. 100000..." style="flex:1;">
+          <button class="btn btn-sm btn-success" onclick="addUID('OWNER')"><i class="fas fa-plus"></i></button>
+        </div>
+      </div>
+      <div>
+        <div class="cfg-label" style="margin-bottom:8px;color:#3b82f6;">🛡️ ADMINBOT UIDs</div>
+        <div class="uid-box" id="uid_ADMINBOT"></div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <input class="cfg-input" type="text" id="uid_ADMINBOT_input" placeholder="UID e.g. 100000..." style="flex:1;">
+          <button class="btn btn-sm btn-success" onclick="addUID('ADMINBOT')"><i class="fas fa-plus"></i></button>
+        </div>
+      </div>
+      <div>
+        <div class="cfg-label" style="margin-bottom:8px;color:#8b5cf6;">⚙️ OPERATOR UIDs</div>
+        <div class="uid-box" id="uid_OPERATOR"></div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <input class="cfg-input" type="text" id="uid_OPERATOR_input" placeholder="UID e.g. 100000..." style="flex:1;">
+          <button class="btn btn-sm btn-success" onclick="addUID('OPERATOR')"><i class="fas fa-plus"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Commands -->
+  <div class="card grid-bottom">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+      <div class="card-title" style="margin:0;"><i class="fas fa-puzzle-piece"></i> Installed Commands <span class="badge badge-blue" id="cmdCount">0</span></div>
+    </div>
+    <input class="cmd-search" type="text" id="cmdSearch" placeholder="🔍  Search commands..." oninput="filterCommands()">
+    <div class="cmd-grid" id="cmdGrid">
+      <div style="color:var(--muted);font-size:13px;grid-column:1/-1;text-align:center;padding:30px 0;">
+        <i class="fas fa-spinner fa-spin" style="margin-right:8px;"></i> Loading commands...
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <i id="toastIcon" class="fas fa-check-circle"></i>
+  <span id="toastMsg">Success</span>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────
+  let lastLogTime = 0;
+  let allCommands = [];
+  let fileContent = null;
+
+  // ── Toast ──────────────────────────────────────────────────
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    const icon = document.getElementById('toastIcon');
+    document.getElementById('toastMsg').textContent = msg;
+    t.className = 'toast show ' + type;
+    icon.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-times-circle';
+    icon.style.color = type === 'success' ? '#10b981' : '#ef4444';
+    clearTimeout(t._timeout);
+    t._timeout = setTimeout(() => t.className = 'toast', 3000);
+  }
+
+  // ── Tab ────────────────────────────────────────────────────
+  function switchTab(id, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // ── Status polling ─────────────────────────────────────────
+  async function pollStatus() {
+    try {
+      const r = await fetch('/api/status');
+      const d = await r.json();
+
+      const dot = document.getElementById('headerDot');
+      const hs = document.getElementById('headerStatus');
+      const ss = document.getElementById('statStatus');
+      const ssu = document.getElementById('statServerUptime');
+      const sbu = document.getElementById('statBotUptime');
+      const sc = document.getElementById('statCmds');
+      const sr = document.getElementById('statRestarts');
+      const sa = document.getElementById('statAppstate');
+
+      const online = d.status === 'running';
+      dot.className = 'status-dot ' + (online ? 'online' : 'offline');
+      hs.textContent = online ? 'Online' : d.status === 'starting' ? 'Starting...' : 'Offline';
+      ss.textContent = d.status.charAt(0).toUpperCase() + d.status.slice(1);
+      ss.style.color = online ? '#10b981' : '#ef4444';
+      ssu.textContent = formatUptime(d.serverUptime);
+      sbu.textContent = formatUptime(d.botUptime);
+      sc.textContent = d.commands;
+      sr.textContent = d.restarts;
+      sa.innerHTML = d.joystateExists
+        ? '<span style="color:#10b981;font-size:18px;">✔</span>'
+        : '<span style="color:#ef4444;font-size:18px;">✘</span>';
+    } catch (_) {}
+  }
+
+  function formatUptime(s) {
+    if (s < 60) return s + 's';
+    if (s < 3600) return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    return h + 'h ' + m + 'm';
+  }
+
+  // ── Log polling ────────────────────────────────────────────
+  async function pollLogs() {
+    try {
+      const r = await fetch('/api/logs?since=' + lastLogTime);
+      const lines = await r.json();
+      if (!lines.length) return;
+      const box = document.getElementById('consoleBox');
+      const autoScroll = document.getElementById('autoScrollChk').checked;
+      lines.forEach(l => {
+        lastLogTime = Math.max(lastLogTime, l.t);
+        const div = document.createElement('div');
+        div.className = 'log-line';
+        const t = new Date(l.t).toLocaleTimeString();
+        let cls = 'log-msg';
+        const m = l.m.toLowerCase();
+        if (m.includes('error') || m.includes('[ error ]')) cls += ' err';
+        else if (m.includes('warn')) cls += ' warn';
+        else if (m.includes('success') || m.includes('deployed') || m.includes('✅') || m.includes('running')) cls += ' ok';
+        else if (m.includes('[ system ]') || m.includes('[ server ]') || m.includes('[ dashboard ]')) cls += ' info';
+        div.innerHTML = `<span class="log-time">${t}</span><span class="${cls}">${escHtml(l.m)}</span>`;
+        box.appendChild(div);
+      });
+      if (autoScroll) box.scrollTop = box.scrollHeight;
+    } catch (_) {}
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function clearConsole() {
+    document.getElementById('consoleBox').innerHTML = '';
+  }
+
+  // ── Restart ────────────────────────────────────────────────
+  async function restartBot() {
+    try {
+      await fetch('/api/restart', { method: 'POST' });
+      showToast('Bot restart initiated!');
+    } catch (_) {
+      showToast('Failed to restart', 'error');
+    }
+  }
+
+  // ── Joystate ───────────────────────────────────────────────
+  async function saveJoystate() {
+    const raw = document.getElementById('joystateInput').value.trim();
+    if (!raw) return showToast('Please paste your appstate JSON first', 'error');
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch (e) { return showToast('Invalid JSON: ' + e.message, 'error'); }
+    try {
+      const r = await fetch('/api/joystate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(parsed)
+      });
+      const d = await r.json();
+      if (d.ok) { showToast('Appstate saved! Bot restarting...'); document.getElementById('joystateInput').value = ''; }
+      else showToast(d.error || 'Failed to save', 'error');
+    } catch (_) { showToast('Network error', 'error'); }
+  }
+
+  function handleFileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        fileContent = JSON.parse(ev.target.result);
+        document.getElementById('filePreview').textContent = '✔ File loaded: ' + file.name + ' (' + (Array.isArray(fileContent) ? fileContent.length + ' cookies' : 'object') + ')';
+        document.getElementById('filePreview').style.color = '#10b981';
+      } catch (err) {
+        fileContent = null;
+        document.getElementById('filePreview').textContent = '✘ Invalid JSON: ' + err.message;
+        document.getElementById('filePreview').style.color = '#ef4444';
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  async function saveJoystateFile() {
+    if (!fileContent) return showToast('Please select a valid Joystate.json file first', 'error');
+    try {
+      const r = await fetch('/api/joystate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fileContent)
+      });
+      const d = await r.json();
+      if (d.ok) { showToast('Appstate saved! Bot restarting...'); fileContent = null; document.getElementById('filePreview').textContent = ''; document.getElementById('fileInput').value = ''; }
+      else showToast(d.error || 'Failed to save', 'error');
+    } catch (_) { showToast('Network error', 'error'); }
+  }
+
+  // Drag & drop
+  const dz = document.getElementById('dropZone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.borderColor = '#3b82f6'; });
+  dz.addEventListener('dragleave', () => { dz.style.borderColor = ''; });
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.style.borderColor = '';
+    const file = e.dataTransfer.files[0];
+    if (file) { const dt = new DataTransfer(); dt.items.add(file); document.getElementById('fileInput').files = dt.files; handleFileUpload({ target: { files: [file] } }); }
+  });
+
+  // ── Commands ───────────────────────────────────────────────
+  async function loadCommands() {
+    try {
+      const r = await fetch('/api/commands');
+      allCommands = await r.json();
+      renderCommands(allCommands);
+    } catch (_) {}
+  }
+
+  function renderCommands(cmds) {
+    const grid = document.getElementById('cmdGrid');
+    document.getElementById('cmdCount').textContent = cmds.length;
+    if (!cmds.length) {
+      grid.innerHTML = '<div style="color:var(--muted);font-size:13px;grid-column:1/-1;text-align:center;padding:30px 0;">No commands found.</div>';
+      return;
+    }
+    grid.innerHTML = cmds.map(c => `
+      <div class="cmd-item">
+        <div class="cmd-name">.${c.name}</div>
+        <div class="cmd-cat">${c.category}</div>
+        <div class="cmd-desc">${escHtml(c.description)}</div>
+      </div>
+    `).join('');
+  }
+
+  function filterCommands() {
+    const q = document.getElementById('cmdSearch').value.toLowerCase();
+    renderCommands(allCommands.filter(c =>
+      c.name.toLowerCase().includes(q) ||
+      c.category.toLowerCase().includes(q) ||
+      c.description.toLowerCase().includes(q)
+    ));
+  }
+
+  // ── Joy.json Config ────────────────────────────────────────
+  const uidData = { OWNER: [], ADMINBOT: [], OPERATOR: [] };
+
+  function renderUIDs(key) {
+    const box = document.getElementById('uid_' + key);
+    if (!box) return;
+    box.innerHTML = uidData[key].length === 0
+      ? '<span style="color:var(--muted);font-size:12px;">No UIDs added</span>'
+      : uidData[key].map((uid, i) => `
+        <span class="uid-tag">
+          ${escHtml(uid)}
+          <button onclick="removeUID('${key}',${i})" title="Remove">✕</button>
+        </span>`).join('');
+  }
+
+  function addUID(key) {
+    const input = document.getElementById('uid_' + key + '_input');
+    const val = input.value.trim();
+    if (!val) return;
+    if (!/^\d+$/.test(val)) return showToast('UID must be numbers only', 'error');
+    if (uidData[key].includes(val)) return showToast('UID already added', 'error');
+    uidData[key].push(val);
+    input.value = '';
+    renderUIDs(key);
+  }
+
+  function removeUID(key, idx) {
+    uidData[key].splice(idx, 1);
+    renderUIDs(key);
+  }
+
+  // Enter key support for UID inputs
+  ['OWNER','ADMINBOT','OPERATOR'].forEach(k => {
+    document.addEventListener('DOMContentLoaded', () => {
+      const inp = document.getElementById('uid_' + k + '_input');
+      if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') addUID(k); });
+    });
+  });
+
+  async function loadConfig() {
+    try {
+      const r = await fetch('/api/joyconfig');
+      const d = await r.json();
+
+      // Basic fields
+      ['BOTNAME','PREFIX','EMOJI'].forEach(k => {
+        const el = document.getElementById('cfg_' + k);
+        if (el) el.value = d[k] || '';
+      });
+
+      // Language
+      const lang = document.getElementById('cfg_language');
+      if (lang) lang.value = d.language || 'en';
+
+      // Toggles
+      ['autoRestart','saveState','approval','notification','banMsg','adminOnlyMsg','accpetPending','developermode'].forEach(k => {
+        const el = document.getElementById('cfg_' + k);
+        if (el) el.checked = !!d[k];
+      });
+
+      // UID arrays
+      ['OWNER','ADMINBOT','OPERATOR'].forEach(k => {
+        uidData[k] = Array.isArray(d[k]) ? [...d[k]] : [];
+        renderUIDs(k);
+      });
+    } catch (e) {
+      showToast('Failed to load config', 'error');
+    }
+  }
+
+  async function saveConfig() {
+    const payload = {
+      BOTNAME: document.getElementById('cfg_BOTNAME').value.trim(),
+      PREFIX:  document.getElementById('cfg_PREFIX').value.trim() || '.',
+      EMOJI:   document.getElementById('cfg_EMOJI').value.trim(),
+      language: document.getElementById('cfg_language').value,
+      autoRestart:    document.getElementById('cfg_autoRestart').checked,
+      saveState:      document.getElementById('cfg_saveState').checked,
+      approval:       document.getElementById('cfg_approval').checked,
+      notification:   document.getElementById('cfg_notification').checked,
+      banMsg:         document.getElementById('cfg_banMsg').checked,
+      adminOnlyMsg:   document.getElementById('cfg_adminOnlyMsg').checked,
+      accpetPending:  document.getElementById('cfg_accpetPending').checked,
+      developermode:  document.getElementById('cfg_developermode').checked,
+      OWNER:    uidData.OWNER,
+      ADMINBOT: uidData.ADMINBOT,
+      OPERATOR: uidData.OPERATOR,
+    };
+    if (!payload.BOTNAME) return showToast('Bot Name cannot be empty', 'error');
+    try {
+      const r = await fetch('/api/joyconfig', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const d = await r.json();
+      if (d.ok) showToast('Config saved! Bot restarting...');
+      else showToast(d.error || 'Failed to save', 'error');
+    } catch (_) { showToast('Network error', 'error'); }
+  }
+
+  // ── Init ───────────────────────────────────────────────────
+  pollStatus();
+  pollLogs();
+  loadCommands();
+  loadConfig();
+  setInterval(pollStatus, 3000);
+  setInterval(pollLogs, 1500);
+
+  // UID input enter key (after DOM ready)
+  ['OWNER','ADMINBOT','OPERATOR'].forEach(k => {
+    const inp = document.getElementById('uid_' + k + '_input');
+    if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') addUID(k); });
+  });
+</script>
+</body>
+  </html>
