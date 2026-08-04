@@ -1,7 +1,25 @@
 const axios = require("axios");
 
-const githubApiUrl = "https://raw.githubusercontent.com/JUBAED-AHMED-JOY/Joy/main/api.json";
+// =========================
+// LOAD BASE API URL
+// =========================
+async function getApiUrl() {
+  try {
+    const base = await axios.get("https://raw.githubusercontent.com/Mostakim0978/D1PT0/refs/heads/main/baseApiUrl.json", {
+      headers: { "Cache-Control": "no-cache" }
+    });
+    return `${base.data.api}/baby`;
+  } catch (err) {
+    console.error("❌ Base API Load Error:", err.message);
+    return null;
+  }
+}
+
 const randomResponses = ["কোন একটি সমস্যা হইচে, একটু পর আবার চেষ্টা করুন 🥲"];
+
+function getRandomResponse() {
+  return randomResponses[Math.floor(Math.random() * randomResponses.length)];
+}
 
 module.exports.config = {
   name: "btt",
@@ -16,64 +34,41 @@ module.exports.config = {
 };
 
 // =========================
-// LOAD API URL FROM GITHUB
-// =========================
-async function getApiUrl() {
-  try {
-    const res = await axios.get(githubApiUrl, { headers: { "Cache-Control": "no-cache" } });
-    return res.data?.api || null;
-  } catch (err) {
-    console.error("❌ GitHub API Load Error:", err.message);
-    return null;
-  }
-}
-
-// =========================
-// CALL API FUNCTION
-// =========================
-async function callApi(params = {}) {
-  const apiUrl = await getApiUrl();
-  if (!apiUrl) return null;
-
-  try {
-    const res = await axios.get(`${apiUrl}/sim`, { params });
-    return res.data;
-  } catch (err) {
-    console.error("❌ API Error:", err.message);
-    return null;
-  }
-}
-
-function getRandomResponse() {
-  return randomResponses[Math.floor(Math.random() * randomResponses.length)];
-}
-
-// =========================
 // SEND ANSWER FUNCTION
 // =========================
-async function sendAnswer(api, threadID, messageID, question) {
-  const res = await callApi({ text: question });
-  const msg = res?.response || res?.answer || res?.data?.msg || getRandomResponse();
+async function sendAnswer(api, threadID, messageID, question, senderID) {
+  const apiUrl = await getApiUrl();
+  if (!apiUrl) {
+    return api.sendMessage(getRandomResponse(), threadID, messageID);
+  }
 
-  return new Promise(resolve => {
-    api.sendMessage(msg, threadID, (err, info) => {
-      if (err) return;
-      global.client.handleReply.push({
-        name: module.exports.config.name,
-        type: "reply",
-        messageID: info.messageID,
-        author: threadID
-      });
-      resolve(info);
-    }, messageID);
-  });
+  try {
+    const res = await axios.get(`${apiUrl}?text=${encodeURIComponent(question)}&senderID=${senderID}&font=1`);
+    const msg = res.data?.reply || getRandomResponse();
+
+    return new Promise(resolve => {
+      api.sendMessage(msg, threadID, (err, info) => {
+        if (err) return;
+        global.client.handleReply.push({
+          name: module.exports.config.name,
+          type: "reply",
+          messageID: info.messageID,
+          author: threadID
+        });
+        resolve(info);
+      }, messageID);
+    });
+  } catch (err) {
+    console.error("❌ API Error:", err.message);
+    return api.sendMessage(getRandomResponse(), threadID, messageID);
+  }
 }
 
 // =========================
 // COMMAND HANDLER
 // =========================
 module.exports.run = async function({ api, event, args }) {
-  const { threadID, messageID } = event;
+  const { threadID, messageID, senderID } = event;
   const input = args.join(" ").trim();
   if (!input) return;
 
@@ -87,37 +82,31 @@ module.exports.run = async function({ api, event, args }) {
       return api.sendMessage("❌ Format: .bot teach প্রশ্ন - উত্তর", threadID, messageID);
 
     const apiUrl = await getApiUrl();
-    if (!apiUrl) return api.sendMessage("❌ API not found in GitHub JSON", threadID, messageID);
+    if (!apiUrl) return api.sendMessage("❌ API URL Load Error!", threadID, messageID);
 
     try {
-      await axios.get(`${apiUrl}/sim`, { params: { teach: `${ask}|${ans}` } });
-      return api.sendMessage(`✅ Teach Added!\n💬 ASK: ${ask}\n💬 ANS: ${ans}`, threadID, messageID);
+      const re = await axios.get(`${apiUrl}?teach=${encodeURIComponent(ask)}&reply=${encodeURIComponent(ans)}&senderID=${senderID}`);
+      return api.sendMessage(`✅ Teach Added!\n💬 ASK: ${ask}\n💬 ANS: ${ans}\n${re.data.message || ""}`, threadID, messageID);
     } catch {
       return api.sendMessage("⚠️ Teach পাঠানো যায়নি, পরে চেষ্টা করুন", threadID, messageID);
     }
   }
 
-  // ---------- KEYINFO ----------
+  // ---------- KEYINFO / MSG ----------
   if (cmd === "keyinfo") {
     if (!content)
       return api.sendMessage("❌ Format: .bot keyinfo ask", threadID, messageID);
 
     const apiUrl = await getApiUrl();
-    if (!apiUrl) return api.sendMessage("❌ API not found in GitHub JSON", threadID, messageID);
+    if (!apiUrl) return api.sendMessage("❌ API URL Load Error!", threadID, messageID);
 
     try {
-      const res = await axios.get(`${apiUrl}/sim`, { params: { list: "" } });
-      const data = res.data;
+      const res = await axios.get(`${apiUrl}?list=${encodeURIComponent(content)}`);
+      const data = res.data?.data;
 
-      if (!Array.isArray(data))
-        return api.sendMessage("❌ Couldn't get key list", threadID, messageID);
+      if (!data) return api.sendMessage(`❌ No data found for "${content}"`, threadID, messageID);
 
-      const found = data.find(item => item.ask?.toLowerCase() === content.toLowerCase());
-      if (!found)
-        return api.sendMessage(`❌ No data found for "${content}"`, threadID, messageID);
-
-      const list = found.answer?.map((a, i) => `${i + 1}. ${a}`).join("\n") || "❌ No answers found";
-      return api.sendMessage(`📚 Answers for "${content}":\n${list}`, threadID, messageID);
+      return api.sendMessage(`📚 Message for "${content}":\n${data}`, threadID, messageID);
     } catch {
       return api.sendMessage("⚠️ Keyinfo আনতে সমস্যা হয়েছে", threadID, messageID);
     }
@@ -135,7 +124,7 @@ module.exports.run = async function({ api, event, args }) {
   }
 
   // ---------- NORMAL CHAT ----------
-  await sendAnswer(api, threadID, messageID, input);
+  await sendAnswer(api, threadID, messageID, input, senderID);
 };
 
 // =========================
@@ -144,7 +133,7 @@ module.exports.run = async function({ api, event, args }) {
 module.exports.handleReply = async function({ api, event, handleReply }) {
   if (handleReply.author !== event.threadID) return;
   const question = event.body;
-  await sendAnswer(api, event.threadID, event.messageID, question);
+  await sendAnswer(api, event.threadID, event.messageID, question, event.senderID);
 };
 
 // =========================
@@ -153,12 +142,12 @@ module.exports.handleReply = async function({ api, event, handleReply }) {
 module.exports.handleEvent = async function({ api, event, Users }) {
   try {
     const body = event.body ? event.body.toLowerCase() : "";
-    const prefixes = ["বাবু", "bot", "bot", "bot", "বট"];
+    const prefixes = ["বাবু", "bot", "bby", "বট"];
     const matchedPrefix = prefixes.find(p => body.startsWith(p));
 
     if (matchedPrefix) {
       const name = await Users.getNameUser(event.senderID);
-      const contentAfterPrefix = body.replace(new RegExp(`^${matchedPrefix}\\s*`), "");
+      const contentAfterPrefix = body.replace(new RegExp(`^${matchedPrefix}\\s*`), "").trim();
 
       if (!contentAfterPrefix) {
         const ran = [
@@ -187,8 +176,8 @@ module.exports.handleEvent = async function({ api, event, Users }) {
         }, event.messageID);
       }
 
-      // যদি লেখা থাকে → GitHub থেকে API লিংক নিয়ে উত্তর দাও
-      await sendAnswer(api, event.threadID, event.messageID, contentAfterPrefix);
+      // যদি প্রশ্ন থাকে → API দিয়ে উত্তর পাঠাও
+      await sendAnswer(api, event.threadID, event.messageID, contentAfterPrefix, event.senderID);
     }
   } catch (err) {
     console.error("HandleEvent Error:", err);
